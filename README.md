@@ -136,7 +136,7 @@ This is a bounded static-analysis release baseline. Runtime authorization behavi
 
 ## License and contribution
 
-This repository is prepared for hackathon judging and does not silently select a license for the project owner. Add the chosen open-source license before publishing a public release. Contributions must preserve the no-execution boundary, add a source-grounded fixture for each new direct rule, and keep `CannotVerifyStatically` conservative.
+Agent Preflight is available under the [MIT License](LICENSE). Contributions must preserve the no-execution boundary, add a source-grounded fixture for each new direct rule, and keep `CannotVerifyStatically` conservative.
 
 ## Build Week context
 
