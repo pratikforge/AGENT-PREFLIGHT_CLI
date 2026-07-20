@@ -36,7 +36,7 @@ jobs:
       - name: Evaluate reviewed fixtures on Unix
         if: runner.os != 'Windows'
         shell: bash
-        run: ./agent-preflight/scripts/evaluate-fixtures.sh
+        run: bash ./agent-preflight/scripts/evaluate-fixtures.sh
       - name: Package Windows Artifact
         if: runner.os == 'Windows'
         shell: pwsh
