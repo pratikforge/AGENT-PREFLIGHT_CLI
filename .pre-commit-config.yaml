@@ -10,6 +10,11 @@ repos:
       - id: detect-private-key
   - repo: local
     hooks:
+      - id: agent-preflight-ci-config
+        name: agent-preflight CI configuration
+        language: system
+        entry: pwsh -NoProfile -File agent-preflight/scripts/verify-ci-workflow.ps1
+        pass_filenames: false
       - id: agent-preflight-fmt
         name: agent-preflight fmt
         language: system

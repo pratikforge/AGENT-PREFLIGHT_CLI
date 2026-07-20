@@ -15,7 +15,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.97.1
-        with: { components: rustfmt, clippy }
+        with:
+          components: "rustfmt, clippy"
+      - name: Validate CI toolchain declaration
+        shell: pwsh
+        run: ./agent-preflight/scripts/verify-ci-workflow.ps1
       - run: cargo build --manifest-path agent-preflight/Cargo.toml --locked
       - run: cargo build --manifest-path agent-preflight/Cargo.toml --release --locked
       - run: cargo fmt --manifest-path agent-preflight/Cargo.toml --check
