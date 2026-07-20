@@ -1,0 +1,29 @@
+# Dependency policy for the unpublished Agent Preflight workspace.
+
+[graph]
+all-features = true
+
+[advisories]
+version = 2
+yanked = "deny"
+ignore = []
+
+[licenses]
+version = 2
+private = { ignore = true }
+confidence-threshold = 0.8
+allow = ["Apache-2.0", "MIT", "Unicode-3.0", "Unlicense"]
+exceptions = []
+
+[bans]
+multiple-versions = "deny"
+wildcards = "deny"
+deny = []
+skip = [{ name = "syn", version = "2.0.119", reason = "required by the pinned Clap derive dependency while pinned Serde and Thiserror use syn v3" }]
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

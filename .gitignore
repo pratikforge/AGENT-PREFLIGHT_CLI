@@ -1,0 +1,22 @@
+# Rust build and package output
+agent-preflight/target/
+
+# Locally generated Graphify indexes and caches
+graphify-out/
+agent-preflight/graphify-out/
+
+# Scanner artifacts generated inside fixtures or scanned repositories
+**/.agent-preflight/
+
+# Local release archives and checksum files
+package/
+*.zip
+*.tar.gz
+SHA256SUMS.txt
+
+# Transient tool-install diagnostics; keep telemetry/error_log.md as the durable record.
+telemetry/*-install.stdout.log
+telemetry/*-install.stderr.log
+
+# Read-only external repositories used for local compatibility audits.
+validation-repos/
