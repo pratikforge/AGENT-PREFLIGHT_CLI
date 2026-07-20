@@ -1,0 +1,90 @@
+cases:
+  - name: openai_failed
+    fixture: openai/missing_approval
+    scan_exit: 0
+    profile: openai-agents-sdk
+    rule_id: openai-function-tool-approval
+    status: CannotVerifyStatically
+  - name: openai_repaired
+    fixture: openai/with_approval
+    scan_exit: 0
+    profile: openai-agents-sdk
+    rule_id: openai-function-tool-approval
+    status: Verified
+  - name: openai_shell_approval
+    fixture: openai/shell_with_approval
+    scan_exit: 0
+    profile: openai-agents-sdk
+    rule_id: openai-local-runtime-tool-approval
+    status: Verified
+  - name: openai_hosted_mcp_literal_approval
+    fixture: openai/hosted_mcp_literal_approval
+    scan_exit: 0
+    profile: openai-agents-sdk
+    rule_id: openai-hosted-mcp-approval
+    status: Verified
+  - name: google_direct
+    fixture: google_adk/direct
+    scan_exit: 0
+    profile: google-adk
+    rule_id: google-adk-function-tool-confirmation
+    status: Verified
+  - name: google_ambiguous
+    fixture: google_adk/ambiguous
+    scan_exit: 0
+    profile: google-adk
+    rule_id: google-adk-function-tool-confirmation
+    status: CannotVerifyStatically
+  - name: google_explicit_false
+    fixture: google_adk/explicit_false
+    scan_exit: 0
+    profile: google-adk
+    rule_id: google-adk-function-tool-confirmation
+    status: Failed
+  - name: google_agent_tools
+    fixture: google_adk/direct_agent_tools
+    scan_exit: 0
+    profile: google-adk
+    rule_id: google-adk-agent-tool-registration
+    status: CannotVerifyStatically
+  - name: claude_ts
+    fixture: claude/direct_ts
+    scan_exit: 0
+    profile: claude-agent-sdk
+    rule_id: claude-query-permission-mode
+    status: Verified
+  - name: claude_tsx
+    fixture: claude/direct_tsx
+    scan_exit: 0
+    profile: claude-agent-sdk
+    rule_id: claude-query-permission-mode
+    status: Verified
+  - name: claude_plan_mode
+    fixture: claude/plan_mode
+    scan_exit: 0
+    profile: claude-agent-sdk
+    rule_id: claude-query-permission-mode
+    status: Verified
+  - name: claude_python_locked_down
+    fixture: claude/python_locked_down
+    scan_exit: 0
+    profile: claude-agent-sdk
+    rule_id: claude-query-permission-mode
+    status: Verified
+  - name: claude_python_bypass
+    fixture: claude/python_bypass
+    scan_exit: 0
+    profile: claude-agent-sdk
+    rule_id: claude-query-permission-mode
+    status: Failed
+  - name: malformed
+    fixture: parser
+    scan_exit: 4
+    profile: openai-agents-sdk
+    parser_state: ParseError
+  - name: path_escape
+    fixture: openai/with_approval
+    scan_exit: 0
+    profile: openai-agents-sdk
+    rule_id: openai-function-tool-approval
+    status: Verified

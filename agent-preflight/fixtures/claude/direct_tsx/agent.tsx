@@ -1,0 +1,4 @@
+import { query } from '@anthropic-ai/claude-agent-sdk';
+
+query({ permissionMode: 'dontAsk', allowedTools: ['Read'] });
+export const View = () => <div />;
