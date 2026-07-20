@@ -1,0 +1,67 @@
+name: Agent Preflight CI
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.97.1
+        with: { components: rustfmt, clippy }
+      - run: cargo build --manifest-path agent-preflight/Cargo.toml --locked
+      - run: cargo build --manifest-path agent-preflight/Cargo.toml --release --locked
+      - run: cargo fmt --manifest-path agent-preflight/Cargo.toml --check
+      - run: cargo clippy --manifest-path agent-preflight/Cargo.toml --locked --all-targets --all-features -- -D warnings
+      - run: cargo test --manifest-path agent-preflight/Cargo.toml --locked
+      - run: cargo install cargo-deny --version 0.20.2 --locked
+      - run: cargo install cargo-audit --version 0.22.2 --locked
+      - run: cargo deny --manifest-path agent-preflight/Cargo.toml check advisories bans licenses sources
+      - run: cargo audit --file agent-preflight/Cargo.lock --deny warnings
+      - name: Evaluate reviewed fixtures on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./agent-preflight/scripts/evaluate-fixtures.ps1
+      - name: Evaluate reviewed fixtures on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./agent-preflight/scripts/evaluate-fixtures.sh
+      - name: Package Windows Artifact
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path package
+          Copy-Item agent-preflight/target/release/agent-preflight.exe package/
+          Copy-Item agent-preflight/README.md package/
+          Compress-Archive -Path package/* -DestinationPath agent-preflight-x86_64-pc-windows-msvc.zip -Force
+          $hash = (Get-FileHash agent-preflight-x86_64-pc-windows-msvc.zip -Algorithm SHA256).Hash.ToLower()
+          "$hash *agent-preflight-x86_64-pc-windows-msvc.zip" | Out-File -Encoding ASCII SHA256SUMS.txt
+      - name: Package Unix Artifact
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          mkdir -p package
+          cp agent-preflight/target/release/agent-preflight package/
+          cp agent-preflight/README.md package/
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
+            TARGET="x86_64-unknown-linux-gnu"
+          else
+            TARGET="x86_64-apple-darwin"
+          fi
+          tar -czvf agent-preflight-${TARGET}.tar.gz -C package .
+          shasum -a 256 agent-preflight-${TARGET}.tar.gz > SHA256SUMS.txt
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifact-${{ matrix.os }}
+          path: |
+            *.zip
+            *.tar.gz
+            SHA256SUMS.txt

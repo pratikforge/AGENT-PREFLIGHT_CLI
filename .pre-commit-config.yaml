@@ -1,0 +1,42 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: detect-private-key
+  - repo: local
+    hooks:
+      - id: agent-preflight-fmt
+        name: agent-preflight fmt
+        language: system
+        entry: cargo +1.97.1 fmt --manifest-path agent-preflight/Cargo.toml --check
+        pass_filenames: false
+      - id: agent-preflight-clippy
+        name: agent-preflight clippy
+        language: system
+        entry: cargo +1.97.1 clippy --manifest-path agent-preflight/Cargo.toml --all-targets --all-features -- -D warnings
+        pass_filenames: false
+      - id: agent-preflight-tests
+        name: agent-preflight tests
+        language: system
+        entry: cargo +1.97.1 test --manifest-path agent-preflight/Cargo.toml --locked
+        pass_filenames: false
+      - id: agent-preflight-deny
+        name: agent-preflight dependency policy
+        language: system
+        entry: cargo deny --manifest-path agent-preflight/Cargo.toml check advisories bans licenses sources
+        pass_filenames: false
+      - id: agent-preflight-audit
+        name: agent-preflight vulnerability audit
+        language: system
+        entry: cargo audit --file agent-preflight/Cargo.lock --deny warnings
+        pass_filenames: false
+      - id: agent-preflight-fixture-matrix
+        name: agent-preflight fixture matrix
+        language: system
+        entry: pwsh -NoProfile -File agent-preflight/scripts/evaluate-fixtures.ps1
+        pass_filenames: false
