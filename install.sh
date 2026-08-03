@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-REPO="pratikforge/agent-preflight"
+REPO="pratikforge/AGENT-PREFLIGHT_CLI"
 INSTALL_DIR="$HOME/.local/bin"
 TMP_DIR=$(mktemp -d)
 

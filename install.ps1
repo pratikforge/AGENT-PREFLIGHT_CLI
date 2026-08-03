@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 
-$Repo = "pratikforge/agent-preflight"
+$Repo = "pratikforge/AGENT-PREFLIGHT_CLI"
 $InstallDir = Join-Path $env:USERPROFILE ".agent-preflight\bin"
 $ZipPath = Join-Path $env:TEMP "agent-preflight-latest.zip"
 
