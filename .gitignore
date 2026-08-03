@@ -20,3 +20,6 @@ telemetry/*-install.stderr.log
 
 # Read-only external repositories used for local compatibility audits.
 validation-repos/
+target/
+
+target/

@@ -19,31 +19,31 @@ jobs:
           components: "rustfmt, clippy"
       - name: Validate CI toolchain declaration
         shell: pwsh
-        run: ./agent-preflight/scripts/verify-ci-workflow.ps1
-      - run: cargo build --manifest-path agent-preflight/Cargo.toml --locked
-      - run: cargo build --manifest-path agent-preflight/Cargo.toml --release --locked
-      - run: cargo fmt --manifest-path agent-preflight/Cargo.toml --check
-      - run: cargo clippy --manifest-path agent-preflight/Cargo.toml --locked --all-targets --all-features -- -D warnings
-      - run: cargo test --manifest-path agent-preflight/Cargo.toml --locked
+        run: ./scripts/verify-ci-workflow.ps1
+      - run: cargo build --manifest-path Cargo.toml --locked
+      - run: cargo build --manifest-path Cargo.toml --release --locked
+      - run: cargo fmt --manifest-path Cargo.toml --check
+      - run: cargo clippy --manifest-path Cargo.toml --locked --all-targets --all-features -- -D warnings
+      - run: cargo test --manifest-path Cargo.toml --locked
       - run: cargo install cargo-deny --version 0.20.2 --locked
       - run: cargo install cargo-audit --version 0.22.2 --locked
-      - run: cargo deny --manifest-path agent-preflight/Cargo.toml check advisories bans licenses sources
-      - run: cargo audit --file agent-preflight/Cargo.lock --deny warnings
+      - run: cargo deny --manifest-path Cargo.toml check advisories bans licenses sources
+      - run: cargo audit --file Cargo.lock --deny warnings
       - name: Evaluate reviewed fixtures on Windows
         if: runner.os == 'Windows'
         shell: pwsh
-        run: ./agent-preflight/scripts/evaluate-fixtures.ps1
+        run: ./scripts/evaluate-fixtures.ps1
       - name: Evaluate reviewed fixtures on Unix
         if: runner.os != 'Windows'
         shell: bash
-        run: bash ./agent-preflight/scripts/evaluate-fixtures.sh
+        run: bash ./scripts/evaluate-fixtures.sh
       - name: Package Windows Artifact
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path package
-          Copy-Item agent-preflight/target/release/agent-preflight.exe package/
-          Copy-Item agent-preflight/README.md package/
+          Copy-Item target/release/agent-preflight.exe package/
+          Copy-Item README.md package/
           Compress-Archive -Path package/* -DestinationPath agent-preflight-x86_64-pc-windows-msvc.zip -Force
           $hash = (Get-FileHash agent-preflight-x86_64-pc-windows-msvc.zip -Algorithm SHA256).Hash.ToLower()
           "$hash *agent-preflight-x86_64-pc-windows-msvc.zip" | Out-File -Encoding ASCII SHA256SUMS.txt
@@ -52,8 +52,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p package
-          cp agent-preflight/target/release/agent-preflight package/
-          cp agent-preflight/README.md package/
+          cp target/release/agent-preflight package/
+          cp README.md package/
           if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             TARGET="x86_64-unknown-linux-gnu"
           else
