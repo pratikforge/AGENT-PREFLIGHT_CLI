@@ -2,9 +2,8 @@
 
 ### Turn agent permissions into a contract — before they become a production surprise.
 
-[![CI](https://github.com/pratikforge/agent-preflight/actions/workflows/agent-preflight-ci.yml/badge.svg?branch=main)](https://github.com/pratikforge/agent-preflight/actions/workflows/agent-preflight-ci.yml)
+[![CI](https://github.com/pratikforge/AGENT-PREFLIGHT_CLI/actions/workflows/agent-preflight-ci.yml/badge.svg?branch=main)](https://github.com/pratikforge/AGENT-PREFLIGHT_CLI/actions/workflows/agent-preflight-ci.yml)
 [![Rust](https://img.shields.io/badge/Rust-1.97.1-orange?logo=rust)](https://www.rust-lang.org/)
-[![Track](https://img.shields.io/badge/OpenAI%20Build%20Week-Developer%20Tools-7c3aed)](https://openai.devpost.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
@@ -41,21 +40,7 @@ flowchart LR
 
 ---
 
-## Built with Codex & GPT-5.6
 
-This project was architected, implemented, and hardened during **OpenAI Build Week** using **Codex** and **GPT-5.6** as core development collaborators.
-
-| What Codex & GPT-5.6 did | What remained human decisions |
-| --- | --- |
-| Decomposed the product into domain model, parser, adapters, and CLI | Product boundary and non-goals |
-| Grounded adapter rules in official OpenAI, Google ADK, and Claude SDK documentation | Which direct syntax patterns to support |
-| Implemented the full Rust parser with tree-sitter grammars for Python and TypeScript | Uncertainty policy (`CannotVerifyStatically` on doubt) |
-| Generated 60+ adversarial fixtures (malformed, dynamic, edge-case) | Release scope and final acceptance |
-| Drove red-green TDD verification across all adapters | Supported frameworks and security contract design |
-| Identified and fixed an oversized evidence artifact on a real 20K-file SDK corpus | — |
-| Established cross-platform CI quality gates (Ubuntu, macOS, Windows) | — |
-
----
 
 ## End-to-End Walkthrough
 
@@ -147,12 +132,12 @@ You can download and install the pre-compiled binaries for **Windows**, **macOS*
 
 **Windows (PowerShell):**
 ```powershell
-irm https://raw.githubusercontent.com/pratikforge/agent-preflight/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/pratikforge/AGENT-PREFLIGHT_CLI/main/install.ps1 | iex
 ```
 
 **macOS / Linux (Bash):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pratikforge/agent-preflight/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/pratikforge/AGENT-PREFLIGHT_CLI/main/install.sh | bash
 ```
 
 These scripts will download the latest release and install it to your local path.
@@ -162,8 +147,8 @@ These scripts will download the latest release and install it to your local path
 Requires [Rust 1.97.1](https://www.rust-lang.org/tools/install) with `rustfmt` and `clippy`.
 
 ```bash
-git clone https://github.com/pratikforge/agent-preflight.git
-cd agent-preflight/agent-preflight
+git clone https://github.com/pratikforge/AGENT-PREFLIGHT_CLI.git
+cd AGENT-PREFLIGHT_CLI
 cargo +1.97.1 build --release --locked
 ```
 
@@ -234,7 +219,7 @@ The repository ships with before/after demo fixtures so you can try the full wor
 
 ```bash
 # Copy the "before" fixture to a temp directory
-cp -r agent-preflight/fixtures/demo/openai_before /tmp/demo-repo
+cp -r fixtures/demo/openai_before /tmp/demo-repo
 
 # Run the full workflow
 agent-preflight scan /tmp/demo-repo
@@ -271,7 +256,7 @@ Deterministic exit codes make CI integration straightforward:
 ## Repository Layout
 
 ```
-agent-preflight/
+.
 ├── src/
 │   ├── adapters/       # Framework-specific static analysis (OpenAI, ADK, Claude)
 │   ├── app/            # Application commands (scan, review, approve, verify, task)
@@ -313,7 +298,7 @@ This is a **bounded static-analysis tool**. It is intentionally conservative:
 - Unsupported languages and generated policy produce uncertainty
 - Aliases, wrappers, and dynamic configuration result in `CannotVerifyStatically`
 
-Read the full [limitations](agent-preflight/docs/limitations.md) before relying on a result.
+Read the full [limitations](docs/limitations.md) before relying on a result.
 
 ---
 
