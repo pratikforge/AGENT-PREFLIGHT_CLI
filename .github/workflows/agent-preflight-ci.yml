@@ -3,7 +3,7 @@ name: Agent Preflight CI
 on: [push, pull_request]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -66,6 +66,14 @@ jobs:
         with:
           name: release-artifact-${{ matrix.os }}
           path: |
+            *.zip
+            *.tar.gz
+            SHA256SUMS.txt
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
             *.zip
             *.tar.gz
             SHA256SUMS.txt
