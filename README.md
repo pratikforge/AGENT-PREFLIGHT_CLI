@@ -141,17 +141,21 @@ The contract now matches the source. CI continues.
 
 ## Installation
 
-### Option A — Download a pre-built binary (Recommended)
+### Option A — Terminal Installation (Recommended)
 
-Pre-built binaries for **Windows**, **macOS**, and **Linux** are automatically produced by CI on every push. Download the latest artifact from the [GitHub Actions page](https://github.com/pratikforge/agent-preflight/actions/workflows/agent-preflight-ci.yml):
+You can download and install the pre-compiled binaries for **Windows**, **macOS**, and **Linux** directly from your terminal.
 
-| Platform | Artifact name |
-| --- | --- |
-| Windows (x64) | `release-artifact-windows-latest` → `agent-preflight.exe` |
-| macOS (x64) | `release-artifact-macos-latest` → `agent-preflight` |
-| Linux (x64) | `release-artifact-ubuntu-latest` → `agent-preflight` |
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/pratikforge/agent-preflight/main/install.ps1 | iex
+```
 
-Download, extract, and run — no Rust toolchain required.
+**macOS / Linux (Bash):**
+```bash
+curl -fsSL https://raw.githubusercontent.com/pratikforge/agent-preflight/main/install.sh | bash
+```
+
+These scripts will download the latest release and install it to your local path.
 
 ### Option B — Build from source
 
