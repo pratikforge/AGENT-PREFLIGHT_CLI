@@ -207,7 +207,7 @@ This tool has an intentionally narrow scope:
 - ❌ Does **not** import or execute the scanned repository
 - ❌ Does **not** invoke agents, tools, subprocesses, models, or network calls
 - ❌ Does **not** silently edit source code or CI configuration
-- ❌ Does **not** claim a repository is secure, compliant, or production-ready
+- ❌ Does **not** claim a repository is bulletproof, compliant, or enterprise-grade
 - ❌ Does **not** replace runtime evaluations, tracing, or threat modeling
 - ❌ Does **not** guess through dynamic configuration, wrappers, or generated code
 
@@ -261,7 +261,7 @@ Deterministic exit codes make CI integration straightforward:
 │   ├── adapters/       # Framework-specific static analysis (OpenAI, ADK, Claude)
 │   ├── app/            # Application commands (scan, review, approve, verify, task)
 │   ├── domain/         # Core domain model and capability contract types
-│   ├── infra/          # Safe filesystem reader with depth/size/symlink limits
+│   ├── infra/          # Bounded filesystem reader with depth/size/symlink limits
 │   └── render/         # Output formatting and report generation
 ├── tests/              # 15 test suites: adapters, parser, security, fixtures, CLI
 ├── fixtures/           # 60+ fixtures: direct, dynamic, malformed, demo repos
