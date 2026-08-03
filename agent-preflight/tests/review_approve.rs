@@ -29,6 +29,62 @@ fn review_renders_pending_rule_from_the_repository_proposal() {
 }
 
 #[test]
+fn review_interactive_approval_accepts_y() {
+    let repo = tempdir().expect("temporary repository");
+    fs::write(
+        repo.path().join("agent.py"),
+        "from agents import function_tool\n",
+    )
+    .expect("agent source");
+    let path = repo.path().to_str().expect("utf-8 temp path");
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["scan", path])
+        .assert()
+        .success();
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["review", path])
+        .env("AGENT_PREFLIGHT_FORCE_INTERACTIVE", "1")
+        .write_stdin("y\n")
+        .assert()
+        .success();
+
+    let approved = fs::read_to_string(repo.path().join(".agent-preflight/contract.yaml"))
+        .expect("approved contract");
+    assert!(approved.contains("static-review-required"));
+}
+
+#[test]
+fn review_interactive_approval_rejects_n() {
+    let repo = tempdir().expect("temporary repository");
+    fs::write(
+        repo.path().join("agent.py"),
+        "from agents import function_tool\n",
+    )
+    .expect("agent source");
+    let path = repo.path().to_str().expect("utf-8 temp path");
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["scan", path])
+        .assert()
+        .success();
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["review", path])
+        .env("AGENT_PREFLIGHT_FORCE_INTERACTIVE", "1")
+        .write_stdin("n\n")
+        .assert()
+        .success();
+
+    assert!(!repo.path().join(".agent-preflight/contract.yaml").exists());
+}
+
+#[test]
 fn approve_valid_rule_writes_revision_bound_local_contract() {
     let repo = tempdir().expect("temporary repository");
     fs::write(
