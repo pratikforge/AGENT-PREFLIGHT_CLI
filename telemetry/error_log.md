@@ -635,3 +635,9 @@ verification: "cargo +1.97.1 test --manifest-path agent-preflight/Cargo.toml --l
 - **What happened:** The isolated formatter wrapper repeated the `Unexpected token: ')'` error before invoking Cargo.
 - **Exact procedure:** Used `.catch(function(e){ return {...});` and closed the call before closing the callback function body.
 - **Prevention:** For Node REPL command execution, use a plain `try/catch` statement rather than chained callback error handlers. Keep one command and one result per snippet.
+
+# 2026-08-04 — Add-file documentation patch omitted a content prefix
+
+- **What happened:** `apply_patch` rejected a new Markdown specification before creating any file.
+- **Exact procedure:** A line inside a fenced command example did not have the mandatory `+` prefix required by an `*** Add File` patch hunk.
+- **Prevention:** Validate every content line in an add-file patch, including fenced code blocks, has `+`; retry with a smaller patch after confirming no partial file was created.

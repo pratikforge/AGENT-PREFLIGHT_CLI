@@ -363,3 +363,6 @@ When running mandatory quality gates through the Node REPL, invoke each gate in 
 
 105. Prefer Try-Catch for Node REPL Command Errors
 For Node REPL command execution, prefer a plain `try/catch` statement over chained callback error handlers. This avoids unbalanced callback closures and keeps each gate readable.
+
+106. Add-File Patch Content Prefixes
+When creating a Markdown file with `apply_patch`, validate that every content line, including fenced command examples, has the `+` add-file prefix. If validation rejects the patch, inspect the target state and retry with a smaller patch.
