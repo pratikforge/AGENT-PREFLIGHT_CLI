@@ -50,7 +50,7 @@ fn denied_request_never_calls_fake_executor() {
     });
 
     assert!(result.is_err());
-    assert_eq!(*called.lock().unwrap(), false);
+    assert!(!(*called.lock().unwrap()));
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn approval_pending_request_never_calls_fake_executor() {
     });
 
     assert!(result.is_err());
-    assert_eq!(*called.lock().unwrap(), false);
+    assert!(!(*called.lock().unwrap()));
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn missing_contract_denies_before_executor() {
     });
 
     assert!(result.is_err());
-    assert_eq!(*called.lock().unwrap(), false);
+    assert!(!(*called.lock().unwrap()));
 }
 
 #[test]
@@ -186,7 +186,7 @@ fn unrecognized_sensitive_capability_is_not_silently_allowed() {
     });
 
     assert!(result.is_err());
-    assert_eq!(*called.lock().unwrap(), false);
+    assert!(!(*called.lock().unwrap()));
 }
 
 #[test]
