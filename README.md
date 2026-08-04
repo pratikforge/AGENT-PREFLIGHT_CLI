@@ -24,9 +24,15 @@ Agent Preflight is a **local, zero-dependency CLI** that statically scans an age
 
 It is deliberately conservative: if it can't prove a control exists through direct source patterns, the result is `CannotVerifyStatically`. **Uncertainty never becomes a green result.**
 
-### Advanced Agent Safety Capabilities
 
-Beyond static analysis, Agent Preflight now introduces an embedded **Runtime Safety Layer**:
+### Robust Multi-file Scan Aggregation & Posture Checks
+- **Intelligent Deduplication:** Aggregates repeated rule statuses across the entire repository instead of spamming with redundant findings. Evaluators run per source for whole-project context and per-file for CI YAML logic, outputting precise deduplicated evidence artifacts.
+- **Fail-Closed Safe Readers:** Robust traversal that securely analyzes hidden folders (like \.github/workflows\) while strictly avoiding path traversal escapes, symlink attacks, and enforcing strict depth and size limits.
+- **CI/CD Security Posture:** Beyond just agent Python/TS logic, Agent Preflight evaluates configuration files to flag insecure continuous integration postures.
+
+### Advanced Agent Protection Capabilities
+
+Beyond static analysis, Agent Preflight now introduces an embedded **Runtime Protection Layer**:
 - **Cryptographic Runtime Approvals**: Intercept agent execution with canonical request digest verification, cryptographic nonce tracking to prevent replays, and strict policy-revision bindings.
 - **Redacted Append-Only Audit Trail**: A tamper-evident, cryptographically chained audit log (SHA-256) that fails-closed upon write failures and guarantees no raw secrets or PII leak into the logs.
 - **Generic Pre-Execution Guard**: Wrappers that sit between the agent framework and the actual tool executor, guaranteeing that unapproved or unrecognized capabilities are explicitly blocked *before* execution happens.
