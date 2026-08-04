@@ -11,19 +11,6 @@ use agent_preflight::app::{approve, review, scan, task, verify};
 use agent_preflight::cli::{Cli, Command};
 
 fn main() {
-    if std::io::stdout().is_terminal() {
-        eprintln!(
-            r#"
-    ___                    __     ____           __ _ _       __    __ 
-   /   | ____  ___  ____  / /_   / __ \________ / /(_) __ _  / /_  / /_
-  / /| |/ __ `/ _ \/ __ \/ __/  / /_/ / ___/ _ \/ / / / __ `/ __ \/ __/
- / ___ / /_/ /  __/ / / / /_   / ____/ /  /  __/ / / / /_/ / / / / /_  
-/_/  |_\__, /\___/_/ /_/\__/  /_/   /_/   \___/_/_/_/\__, /_/ /_/\__/  
-      /____/                                        /____/             
-"#
-        );
-    }
-
     let cli = Cli::parse();
 
     match cli.command {
@@ -83,6 +70,15 @@ fn main() {
                 std::process::exit(2);
             }
         },
-        None => {}
+        None => {
+            if std::io::stdout().is_terminal() {
+                agent_preflight::app::interactive::run_interactive_menu();
+            } else {
+                use clap::CommandFactory;
+                let mut cmd = Cli::command();
+                cmd.print_help().ok();
+                std::process::exit(2);
+            }
+        }
     }
 }
