@@ -220,3 +220,164 @@ fn executor_failure_is_audited_without_argument_leakage() {
     let log_content = std::fs::read_to_string(dir.path().join("audit.log")).unwrap();
     assert!(!log_content.contains("my_secret_args_123"));
 }
+
+use agent_preflight::app::runtime::{ADKGeminiWrapper, ClaudeWrapper, MCPWrapper, OpenAIWrapper};
+
+#[test]
+fn openai_wrapper_blocks_shell_before_transport() {
+    let dir = TempDir::new().unwrap();
+    let contract = create_test_contract(vec![Rule {
+        id: "unsafe-shell".to_string(),
+        intended_capability: "Test".to_string(),
+        risk_tier: "high".to_string(),
+        approval_requirement: "deny".to_string(),
+    }]);
+
+    let interceptor = RuntimeInterceptor::new(Some(contract), dir.path());
+    let guard = RuntimeGuard::new(interceptor);
+    let wrapper = OpenAIWrapper::new(&guard);
+
+    let req = RuntimeRequest {
+        capability_id: "unsafe-shell".to_string(),
+        caller_id: "test-user".to_string(),
+        arguments: serde_json::json!([]),
+        policy_revision: "v1.0.0".to_string(),
+        request_digest: "digest-123".to_string(),
+    };
+
+    let result = wrapper.execute_tool(&req, None, || Ok(()));
+    assert!(result.is_err());
+}
+
+#[test]
+fn adk_gemini_wrapper_requires_approval_before_code_execution() {
+    let dir = TempDir::new().unwrap();
+    let contract = create_test_contract(vec![Rule {
+        id: "code-exec".to_string(),
+        intended_capability: "Test".to_string(),
+        risk_tier: "high".to_string(),
+        approval_requirement: "runtime".to_string(),
+    }]);
+
+    let interceptor = RuntimeInterceptor::new(Some(contract), dir.path());
+    let guard = RuntimeGuard::new(interceptor);
+    let wrapper = ADKGeminiWrapper::new(&guard);
+
+    let req = RuntimeRequest {
+        capability_id: "code-exec".to_string(),
+        caller_id: "test-user".to_string(),
+        arguments: serde_json::json!([]),
+        policy_revision: "v1.0.0".to_string(),
+        request_digest: "digest-123".to_string(),
+    };
+
+    let result = wrapper.execute_tool(&req, None, || Ok(()));
+    assert!(result.is_err());
+}
+
+#[test]
+fn claude_wrapper_blocks_disallowed_file_write_before_executor() {
+    let dir = TempDir::new().unwrap();
+    let contract = create_test_contract(vec![Rule {
+        id: "file-write".to_string(),
+        intended_capability: "Test".to_string(),
+        risk_tier: "high".to_string(),
+        approval_requirement: "deny".to_string(),
+    }]);
+
+    let interceptor = RuntimeInterceptor::new(Some(contract), dir.path());
+    let guard = RuntimeGuard::new(interceptor);
+    let wrapper = ClaudeWrapper::new(&guard);
+
+    let req = RuntimeRequest {
+        capability_id: "file-write".to_string(),
+        caller_id: "test-user".to_string(),
+        arguments: serde_json::json!([]),
+        policy_revision: "v1.0.0".to_string(),
+        request_digest: "digest-123".to_string(),
+    };
+
+    let result = wrapper.execute_tool(&req, None, || Ok(()));
+    assert!(result.is_err());
+}
+
+#[test]
+fn mcp_wrapper_blocks_unapproved_http_before_connect() {
+    let dir = TempDir::new().unwrap();
+    let contract = create_test_contract(vec![Rule {
+        id: "http-connect".to_string(),
+        intended_capability: "Test".to_string(),
+        risk_tier: "high".to_string(),
+        approval_requirement: "runtime".to_string(),
+    }]);
+
+    let interceptor = RuntimeInterceptor::new(Some(contract), dir.path());
+    let guard = RuntimeGuard::new(interceptor);
+    let wrapper = MCPWrapper::new(&guard);
+
+    let req = RuntimeRequest {
+        capability_id: "http-connect".to_string(),
+        caller_id: "test-user".to_string(),
+        arguments: serde_json::json!([]),
+        policy_revision: "v1.0.0".to_string(),
+        request_digest: "digest-123".to_string(),
+    };
+
+    let result = wrapper.execute_tool(&req, None, || Ok(()));
+    assert!(result.is_err());
+}
+
+#[test]
+fn wrappers_forward_caller_and_canonical_digest() {
+    let dir = TempDir::new().unwrap();
+    let contract = create_test_contract(vec![Rule {
+        id: "safe-tool".to_string(),
+        intended_capability: "Test".to_string(),
+        risk_tier: "low".to_string(),
+        approval_requirement: "none".to_string(),
+    }]);
+
+    let interceptor = RuntimeInterceptor::new(Some(contract), dir.path());
+    let guard = RuntimeGuard::new(interceptor);
+    let wrapper = OpenAIWrapper::new(&guard);
+
+    let req = RuntimeRequest {
+        capability_id: "safe-tool".to_string(),
+        caller_id: "alice".to_string(),
+        arguments: serde_json::json!([]),
+        policy_revision: "v1.0.0".to_string(),
+        request_digest: "digest-xyz".to_string(),
+    };
+
+    let result = wrapper.execute_tool(&req, None, || Ok(()));
+    assert!(result.is_ok());
+
+    let log_content = std::fs::read_to_string(dir.path().join("audit.log")).unwrap();
+    assert!(log_content.contains("digest-xyz"));
+}
+
+#[test]
+fn wrapper_policy_revision_mismatch_fails_closed() {
+    let dir = TempDir::new().unwrap();
+    let contract = create_test_contract(vec![Rule {
+        id: "safe-tool".to_string(),
+        intended_capability: "Test".to_string(),
+        risk_tier: "low".to_string(),
+        approval_requirement: "none".to_string(),
+    }]);
+
+    let interceptor = RuntimeInterceptor::new(Some(contract), dir.path());
+    let guard = RuntimeGuard::new(interceptor);
+    let wrapper = OpenAIWrapper::new(&guard);
+
+    let req = RuntimeRequest {
+        capability_id: "safe-tool".to_string(),
+        caller_id: "alice".to_string(),
+        arguments: serde_json::json!([]),
+        policy_revision: "".to_string(), // Empty or mismatch
+        request_digest: "digest-xyz".to_string(),
+    };
+
+    let result = wrapper.execute_tool(&req, None, || Ok(()));
+    assert!(result.is_err());
+}

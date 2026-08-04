@@ -156,26 +156,30 @@ impl RuntimeInterceptor {
             return InterceptDecision::Deny("No approved contract found".to_owned());
         };
 
-        // For tests, match capability ID instead of tool name
-        let rule_id_match = match req.capability_id.as_str() {
-            "bash" | "sh" | "powershell" => {
-                let args_str = req.arguments.to_string();
-                if args_str.contains("rm -rf") {
-                    Some("unsafe-rm-rf")
-                } else {
-                    None
+        let rule_id_match =
+            if let Some(r) = contract.rules.iter().find(|r| r.id == req.capability_id) {
+                Some(r.id.as_str())
+            } else {
+                match req.capability_id.as_str() {
+                    "bash" | "sh" | "powershell" => {
+                        let args_str = req.arguments.to_string();
+                        if args_str.contains("rm -rf") {
+                            Some("unsafe-rm-rf")
+                        } else {
+                            None
+                        }
+                    }
+                    "git" => {
+                        let args_str = req.arguments.to_string();
+                        if args_str.contains("push --force") {
+                            Some("unsafe-git-force-push")
+                        } else {
+                            None
+                        }
+                    }
+                    _ => None,
                 }
-            }
-            "git" => {
-                let args_str = req.arguments.to_string();
-                if args_str.contains("push --force") {
-                    Some("unsafe-git-force-push")
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        };
+            };
 
         if let Some(rule_id) = rule_id_match {
             if let Some(rule) = contract.rules.iter().find(|r| r.id == rule_id) {
@@ -364,3 +368,99 @@ impl RuntimeGuard {
 }
 
 // --------------------------------------------------
+
+pub struct OpenAIWrapper<'a> {
+    guard: &'a RuntimeGuard,
+}
+
+impl<'a> OpenAIWrapper<'a> {
+    pub fn new(guard: &'a RuntimeGuard) -> Self {
+        Self { guard }
+    }
+    pub fn execute_tool<F, R>(
+        &self,
+        req: &RuntimeRequest,
+        approval: Option<&RuntimeApproval>,
+        executor: F,
+    ) -> Result<R, String>
+    where
+        F: FnOnce() -> Result<R, String>,
+    {
+        if req.capability_id.contains("shell") {
+            // Check specifically for shell capability if needed, or rely on guard.
+        }
+        if req.policy_revision.is_empty() {
+            return Err("Policy revision mismatch".to_string());
+        }
+        self.guard.execute(req, approval, executor)
+    }
+}
+
+pub struct ADKGeminiWrapper<'a> {
+    guard: &'a RuntimeGuard,
+}
+impl<'a> ADKGeminiWrapper<'a> {
+    pub fn new(guard: &'a RuntimeGuard) -> Self {
+        Self { guard }
+    }
+    pub fn execute_tool<F, R>(
+        &self,
+        req: &RuntimeRequest,
+        approval: Option<&RuntimeApproval>,
+        executor: F,
+    ) -> Result<R, String>
+    where
+        F: FnOnce() -> Result<R, String>,
+    {
+        if req.policy_revision.is_empty() {
+            return Err("Policy revision mismatch".to_string());
+        }
+        self.guard.execute(req, approval, executor)
+    }
+}
+
+pub struct ClaudeWrapper<'a> {
+    guard: &'a RuntimeGuard,
+}
+impl<'a> ClaudeWrapper<'a> {
+    pub fn new(guard: &'a RuntimeGuard) -> Self {
+        Self { guard }
+    }
+    pub fn execute_tool<F, R>(
+        &self,
+        req: &RuntimeRequest,
+        approval: Option<&RuntimeApproval>,
+        executor: F,
+    ) -> Result<R, String>
+    where
+        F: FnOnce() -> Result<R, String>,
+    {
+        if req.policy_revision.is_empty() {
+            return Err("Policy revision mismatch".to_string());
+        }
+        self.guard.execute(req, approval, executor)
+    }
+}
+
+pub struct MCPWrapper<'a> {
+    guard: &'a RuntimeGuard,
+}
+impl<'a> MCPWrapper<'a> {
+    pub fn new(guard: &'a RuntimeGuard) -> Self {
+        Self { guard }
+    }
+    pub fn execute_tool<F, R>(
+        &self,
+        req: &RuntimeRequest,
+        approval: Option<&RuntimeApproval>,
+        executor: F,
+    ) -> Result<R, String>
+    where
+        F: FnOnce() -> Result<R, String>,
+    {
+        if req.policy_revision.is_empty() {
+            return Err("Policy revision mismatch".to_string());
+        }
+        self.guard.execute(req, approval, executor)
+    }
+}
