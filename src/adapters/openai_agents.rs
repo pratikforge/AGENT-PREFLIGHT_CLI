@@ -77,6 +77,119 @@ pub fn evaluate(files: &[NormalizedFile]) -> Vec<Finding> {
         .collect()
 }
 
+pub fn to_ir(files: &[NormalizedFile]) -> crate::domain::ir::CapabilityIr {
+    let mut ir = crate::domain::ir::CapabilityIr::default();
+
+    // We create one dummy Agent per file just to hold the tools/mcp_servers
+    for file in files {
+        let mut tools = Vec::new();
+        let mut mcp_servers = Vec::new();
+
+        if imports_direct_function_tool(file) {
+            for decorator in &file.decorators {
+                tools.push(crate::domain::ir::Tool {
+                    id: "function_tool".to_string(),
+                    implementation: decorator.name.clone(),
+                    approval_control: if decorator.arguments == "needs_approval=True" {
+                        "always".to_string()
+                    } else {
+                        "none".to_string()
+                    },
+                });
+            }
+        }
+
+        if imports_direct_agent(file) && file.calls.iter().any(|call| call.callee == "Agent") {
+            for call in file
+                .calls
+                .iter()
+                .filter(|call| call.callee.ends_with(".as_tool"))
+            {
+                tools.push(crate::domain::ir::Tool {
+                    id: "agent_tool".to_string(),
+                    implementation: call.callee.clone(),
+                    approval_control: if has_static_control(call, "needs_approval=True") {
+                        "always".to_string()
+                    } else {
+                        "none".to_string()
+                    },
+                });
+            }
+        }
+
+        if imports_direct_mcp_server(file) {
+            for call in file
+                .calls
+                .iter()
+                .filter(|call| is_direct_mcp_server_constructor(&call.callee))
+            {
+                mcp_servers.push(crate::domain::ir::McpServer {
+                    endpoint: call.callee.clone(),
+                    transport: "stdio".to_string(),
+                });
+            }
+        }
+
+        if imports_direct_local_runtime_tool(file) {
+            for call in file
+                .calls
+                .iter()
+                .filter(|call| is_direct_local_runtime_tool_constructor(&call.callee))
+            {
+                tools.push(crate::domain::ir::Tool {
+                    id: "local_runtime_tool".to_string(),
+                    implementation: call.callee.clone(),
+                    approval_control: if has_static_control(call, "needs_approval=True") {
+                        "always".to_string()
+                    } else {
+                        "none".to_string()
+                    },
+                });
+            }
+        }
+
+        if imports_direct_hosted_mcp_tool(file) {
+            for call in file
+                .calls
+                .iter()
+                .filter(|call| call.callee == "HostedMCPTool")
+            {
+                tools.push(crate::domain::ir::Tool {
+                    id: "hosted_mcp_tool".to_string(),
+                    implementation: call.callee.clone(),
+                    approval_control: if has_static_control(
+                        call,
+                        "hosted_mcp_require_approval=always",
+                    ) {
+                        "always".to_string()
+                    } else {
+                        "none".to_string()
+                    },
+                });
+            }
+        }
+
+        if !tools.is_empty() || !mcp_servers.is_empty() {
+            ir.agents.push(crate::domain::ir::Agent {
+                id: "agent".to_string(),
+                provider: "openai".to_string(),
+                tools,
+                mcp_servers,
+                sandbox: None,
+                destinations: vec![],
+                sensitive_data: vec![],
+                dependencies: vec![],
+                evidence: crate::domain::ir::EvidenceNode {
+                    origin: file.path.clone(),
+                    refs: vec![],
+                },
+            });
+        }
+    }
+
+    ir
+}
+
 fn unverifiable_import(file: &NormalizedFile, line: u32) -> Finding {
     Finding {
         rule_id: RULE_ID.to_owned(),

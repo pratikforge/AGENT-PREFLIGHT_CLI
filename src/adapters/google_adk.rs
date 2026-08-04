@@ -18,55 +18,60 @@ pub fn evaluate(files: &[NormalizedFile]) -> Vec<Finding> {
     files
         .iter()
         .flat_map(|file| {
+            let mut findings = Vec::new();
             if imports_direct_function_tool(file) {
-                file.calls
-                    .iter()
-                    .filter(|call| call.callee == "FunctionTool")
-                    .map(|call| Finding {
-                        rule_id: RULE_ID.to_owned(),
-                        status: if call
-                            .true_keywords
-                            .iter()
-                            .any(|keyword| keyword == "require_confirmation")
-                        {
-                            Status::Verified
-                        } else if has_static_control(call, "require_confirmation=False") {
-                            Status::Failed
-                        } else {
-                            Status::CannotVerifyStatically
-                        },
-                        evidence: EvidenceRef {
-                            path: file.path.clone(),
-                            line: call.span.line,
-                            parser_error: false,
-                        },
-                        matrix_source: MATRIX_SOURCE.to_owned(),
-                    })
-                    .collect()
-            } else if imports_direct_agent(file) {
-                file.calls
-                    .iter()
-                    .filter(|call| {
-                        (call.callee == "Agent" || call.callee == "LlmAgent")
-                            && call.keyword_names.iter().any(|keyword| keyword == "tools")
-                    })
-                    .map(|call| Finding {
-                        rule_id: AGENT_TOOLS_RULE_ID.to_owned(),
-                        status: Status::CannotVerifyStatically,
-                        evidence: EvidenceRef {
-                            path: file.path.clone(),
-                            line: call.span.line,
-                            parser_error: false,
-                        },
-                        matrix_source: MATRIX_SOURCE.to_owned(),
-                    })
-                    .collect()
-            } else if let Some(import) = file.imports.iter().find(|fact| {
+                findings.extend(
+                    file.calls
+                        .iter()
+                        .filter(|call| call.callee == "FunctionTool")
+                        .map(|call| Finding {
+                            rule_id: RULE_ID.to_owned(),
+                            status: if call
+                                .true_keywords
+                                .iter()
+                                .any(|keyword| keyword == "require_confirmation")
+                            {
+                                Status::Verified
+                            } else if has_static_control(call, "require_confirmation=False") {
+                                Status::Failed
+                            } else {
+                                Status::CannotVerifyStatically
+                            },
+                            evidence: EvidenceRef {
+                                path: file.path.clone(),
+                                line: call.span.line,
+                                parser_error: false,
+                            },
+                            matrix_source: MATRIX_SOURCE.to_owned(),
+                        }),
+                );
+            }
+            if imports_direct_agent(file) {
+                findings.extend(
+                    file.calls
+                        .iter()
+                        .filter(|call| {
+                            (call.callee == "Agent" || call.callee == "LlmAgent")
+                                && call.keyword_names.iter().any(|keyword| keyword == "tools")
+                        })
+                        .map(|call| Finding {
+                            rule_id: AGENT_TOOLS_RULE_ID.to_owned(),
+                            status: Status::CannotVerifyStatically,
+                            evidence: EvidenceRef {
+                                path: file.path.clone(),
+                                line: call.span.line,
+                                parser_error: false,
+                            },
+                            matrix_source: MATRIX_SOURCE.to_owned(),
+                        }),
+                );
+            }
+            if let Some(import) = file.imports.iter().find(|fact| {
                 fact.module == "google.adk.tools.function_tool"
                     && fact.symbol.as_deref() == Some("FunctionTool")
                     && fact.alias.is_some()
             }) {
-                vec![Finding {
+                findings.push(Finding {
                     rule_id: RULE_ID.to_owned(),
                     status: Status::CannotVerifyStatically,
                     evidence: EvidenceRef {
@@ -75,12 +80,75 @@ pub fn evaluate(files: &[NormalizedFile]) -> Vec<Finding> {
                         parser_error: false,
                     },
                     matrix_source: MATRIX_SOURCE.to_owned(),
-                }]
-            } else {
-                Vec::new()
+                });
             }
+            findings
         })
         .collect()
+}
+
+pub fn to_ir(files: &[NormalizedFile]) -> crate::domain::ir::CapabilityIr {
+    let mut ir = crate::domain::ir::CapabilityIr::default();
+
+    for file in files {
+        let mut tools = Vec::new();
+
+        if imports_direct_function_tool(file) {
+            for call in file
+                .calls
+                .iter()
+                .filter(|call| call.callee == "FunctionTool")
+            {
+                tools.push(crate::domain::ir::Tool {
+                    id: "function_tool".to_string(),
+                    implementation: call.callee.clone(),
+                    approval_control: if call
+                        .true_keywords
+                        .iter()
+                        .any(|kw| kw == "require_confirmation")
+                    {
+                        "always".to_string()
+                    } else if has_static_control(call, "require_confirmation=False") {
+                        "none".to_string()
+                    } else {
+                        "unknown".to_string()
+                    },
+                });
+            }
+        }
+
+        if imports_direct_agent(file) {
+            for call in file.calls.iter().filter(|call| {
+                (call.callee == "Agent" || call.callee == "LlmAgent")
+                    && call.keyword_names.iter().any(|keyword| keyword == "tools")
+            }) {
+                tools.push(crate::domain::ir::Tool {
+                    id: "agent_tool".to_string(),
+                    implementation: call.callee.clone(),
+                    approval_control: "unknown".to_string(),
+                });
+            }
+        }
+
+        if !tools.is_empty() {
+            ir.agents.push(crate::domain::ir::Agent {
+                id: "agent".to_string(),
+                provider: "google".to_string(),
+                tools,
+                mcp_servers: vec![],
+                sandbox: None,
+                destinations: vec![],
+                sensitive_data: vec![],
+                dependencies: vec![],
+                evidence: crate::domain::ir::EvidenceNode {
+                    origin: file.path.clone(),
+                    refs: vec![],
+                },
+            });
+        }
+    }
+
+    ir
 }
 
 fn imports_direct_agent(file: &NormalizedFile) -> bool {

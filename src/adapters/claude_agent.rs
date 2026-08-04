@@ -117,6 +117,87 @@ fn finding(
     }
 }
 
+pub fn to_ir(files: &[NormalizedFile]) -> crate::domain::ir::CapabilityIr {
+    let mut ir = crate::domain::ir::CapabilityIr::default();
+
+    for file in files {
+        let mut tools = Vec::new();
+
+        if imports_direct_typescript_query(file) {
+            for call in file.calls.iter().filter(|call| call.callee == "query") {
+                tools.push(crate::domain::ir::Tool {
+                    id: "query".to_string(),
+                    implementation: "query".to_string(),
+                    approval_control: if has_static_control(
+                        call,
+                        "permissionMode=bypassPermissions",
+                    ) {
+                        "none".to_string()
+                    } else if has_static_control(call, "permissionMode=plan")
+                        || (has_static_control(call, "permissionMode=dontAsk")
+                            && has_static_control(call, "allowedTools=literal-nonempty"))
+                    {
+                        "always".to_string()
+                    } else {
+                        "unknown".to_string()
+                    },
+                });
+            }
+        } else if imports_direct_python_query(file) {
+            let calls: Vec<_> = if imports_direct_python_options(file) {
+                file.calls
+                    .iter()
+                    .filter(|call| call.callee == "ClaudeAgentOptions")
+                    .collect()
+            } else {
+                file.calls
+                    .iter()
+                    .filter(|call| call.callee == "query")
+                    .collect()
+            };
+
+            for call in calls {
+                tools.push(crate::domain::ir::Tool {
+                    id: "query".to_string(),
+                    implementation: call.callee.clone(),
+                    approval_control: if has_static_control(
+                        call,
+                        "permission_mode=bypassPermissions",
+                    ) {
+                        "none".to_string()
+                    } else if has_static_control(call, "permission_mode=plan")
+                        || (has_static_control(call, "permission_mode=dontAsk")
+                            && has_static_control(call, "allowed_tools=literal-nonempty"))
+                    {
+                        "always".to_string()
+                    } else {
+                        "unknown".to_string()
+                    },
+                });
+            }
+        }
+
+        if !tools.is_empty() {
+            ir.agents.push(crate::domain::ir::Agent {
+                id: "agent".to_string(),
+                provider: "claude".to_string(),
+                tools,
+                mcp_servers: vec![],
+                sandbox: None,
+                destinations: vec![],
+                sensitive_data: vec![],
+                dependencies: vec![],
+                evidence: crate::domain::ir::EvidenceNode {
+                    origin: file.path.clone(),
+                    refs: vec![],
+                },
+            });
+        }
+    }
+
+    ir
+}
+
 fn unverifiable_import(file: &NormalizedFile, line: u32) -> Finding {
     Finding {
         rule_id: RULE_ID.to_owned(),
