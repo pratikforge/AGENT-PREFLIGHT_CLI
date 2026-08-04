@@ -23,6 +23,7 @@ fn yaml_contracts_round_trip_and_invalid_inputs_fail_closed() {
     let input = r#"
 schema_version: 1
 profile: openai_agents_sdk_python
+policy_revision: v1.0.0
 rules:
   - id: tool.send_email
     intended_capability: send_email
@@ -35,8 +36,10 @@ revision_sha256: stale
     assert_eq!(contract.profile, "openai_agents_sdk_python");
     assert!(Contract::from_yaml("schema_version: nope").is_err());
     assert!(
-        Contract::from_yaml("schema_version: 99\nprofile: x\nrules: []\nrevision_sha256: x")
-            .is_err()
+        Contract::from_yaml(
+            "schema_version: 99\nprofile: x\npolicy_revision: x\nrules: []\nrevision_sha256: x"
+        )
+        .is_err()
     );
 }
 
@@ -45,6 +48,7 @@ fn contract_rejects_unknown_schema_and_detects_stale_hash() {
     let mut contract = Contract {
         schema_version: SCHEMA_VERSION,
         profile: "openai_agents_sdk_python".into(),
+        policy_revision: "latest".into(),
         rules: vec![Rule {
             id: "tool.send_email".into(),
             intended_capability: "send_email".into(),

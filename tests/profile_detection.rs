@@ -37,5 +37,7 @@ fn file_with_import(module: &str, symbol: &str) -> NormalizedFile {
         decorators: Vec::new(),
         calls: Vec::new(),
         literals: Vec::new(),
+        assignments: Vec::new(),
+        data_flows: Vec::new(),
     }
 }

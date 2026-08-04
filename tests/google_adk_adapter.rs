@@ -69,11 +69,13 @@ fn direct_agent_tool_registration_is_visible_but_not_misrepresented_as_confirmat
         span: Span { line: 1, column: 1 },
     }];
     file.calls = vec![CallFact {
+        enclosing_function: None,
         callee: "Agent".to_owned(),
         keyword_names: vec!["tools".to_owned()],
         true_keywords: Vec::new(),
         property_names: Vec::new(),
         static_controls: Vec::new(),
+        keyword_arguments: vec![],
         span: Span { line: 8, column: 1 },
     }];
 
@@ -95,11 +97,13 @@ fn direct_llm_agent_tool_registration_is_visible_but_not_misrepresented_as_confi
         span: Span { line: 1, column: 1 },
     }];
     file.calls = vec![CallFact {
+        enclosing_function: None,
         callee: "LlmAgent".to_owned(),
         keyword_names: vec!["tools".to_owned()],
         true_keywords: Vec::new(),
         property_names: Vec::new(),
         static_controls: Vec::new(),
+        keyword_arguments: vec![],
         span: Span { line: 8, column: 1 },
     }];
 
@@ -124,13 +128,17 @@ fn direct_tool(true_keywords: Vec<String>) -> NormalizedFile {
         }],
         decorators: Vec::new(),
         calls: vec![CallFact {
+            enclosing_function: None,
             callee: "FunctionTool".to_owned(),
             keyword_names: true_keywords.clone(),
             true_keywords,
             property_names: Vec::new(),
             static_controls: Vec::new(),
+            keyword_arguments: vec![],
             span: Span { line: 3, column: 1 },
         }],
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     }
 }

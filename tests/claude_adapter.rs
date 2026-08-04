@@ -137,14 +137,18 @@ fn direct_query(static_controls: Vec<String>, property_names: Vec<String>) -> No
         }],
         decorators: Vec::new(),
         calls: vec![CallFact {
+            enclosing_function: None,
             callee: "query".to_owned(),
             keyword_names: Vec::new(),
             true_keywords: Vec::new(),
             property_names,
             static_controls,
+            keyword_arguments: vec![],
             span: Span { line: 3, column: 1 },
         }],
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     }
 }
 
@@ -170,22 +174,28 @@ fn python_query(static_controls: Vec<String>) -> NormalizedFile {
         decorators: Vec::new(),
         calls: vec![
             CallFact {
+                enclosing_function: None,
                 callee: "query".to_owned(),
                 keyword_names: vec!["options".to_owned()],
                 true_keywords: Vec::new(),
                 property_names: Vec::new(),
                 static_controls: Vec::new(),
+                keyword_arguments: vec![],
                 span: Span { line: 3, column: 1 },
             },
             CallFact {
+                enclosing_function: None,
                 callee: "ClaudeAgentOptions".to_owned(),
                 keyword_names: Vec::new(),
                 true_keywords: Vec::new(),
                 property_names: Vec::new(),
                 static_controls,
+                keyword_arguments: vec![],
                 span: Span { line: 5, column: 1 },
             },
         ],
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     }
 }

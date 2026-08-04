@@ -24,6 +24,8 @@ fn direct_function_tool_without_approval_is_unverifiable_without_a_risk_contract
         }],
         calls: Vec::new(),
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     };
 
     let findings = evaluate(&[file]);
@@ -165,6 +167,8 @@ fn direct_tool(arguments: &str) -> NormalizedFile {
         }],
         calls: Vec::new(),
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     }
 }
 
@@ -182,23 +186,29 @@ fn agent_as_tool(static_controls: Vec<String>) -> NormalizedFile {
         decorators: Vec::new(),
         calls: vec![
             CallFact {
+                enclosing_function: None,
                 callee: "Agent".to_owned(),
                 keyword_names: Vec::new(),
                 true_keywords: Vec::new(),
                 property_names: Vec::new(),
                 static_controls: Vec::new(),
+                keyword_arguments: vec![],
                 span: Span { line: 3, column: 1 },
             },
             CallFact {
+                enclosing_function: None,
                 callee: "specialist.as_tool".to_owned(),
                 keyword_names: vec!["needs_approval".to_owned()],
                 true_keywords: Vec::new(),
                 property_names: Vec::new(),
                 static_controls,
+                keyword_arguments: vec![],
                 span: Span { line: 8, column: 1 },
             },
         ],
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     }
 }
 
@@ -215,14 +225,18 @@ fn mcp_server(static_controls: Vec<String>) -> NormalizedFile {
         }],
         decorators: Vec::new(),
         calls: vec![CallFact {
+            enclosing_function: None,
             callee: "MCPServerStdio".to_owned(),
             keyword_names: vec!["require_approval".to_owned()],
             true_keywords: Vec::new(),
             property_names: Vec::new(),
             static_controls,
+            keyword_arguments: vec![],
             span: Span { line: 5, column: 1 },
         }],
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     }
 }
 
@@ -239,14 +253,18 @@ fn local_runtime_tool(callee: &str, static_controls: Vec<String>) -> NormalizedF
         }],
         decorators: Vec::new(),
         calls: vec![CallFact {
+            enclosing_function: None,
             callee: callee.to_owned(),
             keyword_names: Vec::new(),
             true_keywords: Vec::new(),
             property_names: Vec::new(),
             static_controls,
+            keyword_arguments: vec![],
             span: Span { line: 5, column: 1 },
         }],
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     }
 }
 
@@ -263,13 +281,17 @@ fn hosted_mcp(static_controls: Vec<String>) -> NormalizedFile {
         }],
         decorators: Vec::new(),
         calls: vec![CallFact {
+            enclosing_function: None,
             callee: "HostedMCPTool".to_owned(),
             keyword_names: vec!["tool_config".to_owned()],
             true_keywords: Vec::new(),
             property_names: Vec::new(),
             static_controls,
+            keyword_arguments: vec![],
             span: Span { line: 5, column: 1 },
         }],
         literals: Vec::new(),
+        assignments: vec![],
+        data_flows: vec![],
     }
 }
