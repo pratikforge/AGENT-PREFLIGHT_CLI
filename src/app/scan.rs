@@ -68,71 +68,72 @@ pub fn run(root: &Path) -> Result<ScanResult, ScanError> {
         Profile::Unsupported => Vec::new(),
     };
 
+    let pi_findings = crate::adapters::prompt_injection::evaluate(&files);
+    for f in pi_findings {
+        findings.push(ScanFinding::from_generic(
+            f.rule_id,
+            f.status,
+            f.evidence,
+            f.matrix_source,
+            &policy_revision,
+        ));
+    }
+
+    let egress_findings = crate::adapters::network_egress::evaluate(&files);
+    for f in egress_findings {
+        findings.push(ScanFinding::from_generic(
+            f.rule_id,
+            f.status,
+            f.evidence,
+            f.matrix_source,
+            &policy_revision,
+        ));
+    }
+
+    let supply_findings = crate::adapters::supply_chain::evaluate(&files);
+    for f in supply_findings {
+        findings.push(ScanFinding::from_generic(
+            f.rule_id,
+            f.status,
+            f.evidence,
+            f.matrix_source,
+            &policy_revision,
+        ));
+    }
+    let unsafe_findings = crate::adapters::unsafe_actions::evaluate(&files);
+    for f in unsafe_findings {
+        findings.push(ScanFinding::from_generic(
+            f.rule_id,
+            f.status,
+            f.evidence,
+            f.matrix_source,
+            &policy_revision,
+        ));
+    }
+
+    let secrets_findings = crate::adapters::secrets_scanning::evaluate(&files);
+    for f in secrets_findings {
+        findings.push(ScanFinding::from_generic(
+            f.rule_id,
+            f.status,
+            f.evidence,
+            f.matrix_source,
+            &policy_revision,
+        ));
+    }
+
+    let taint_findings = crate::adapters::taint_analysis::evaluate(&files);
+    for f in taint_findings {
+        findings.push(ScanFinding::from_generic(
+            f.rule_id,
+            f.status,
+            f.evidence,
+            f.matrix_source,
+            &policy_revision,
+        ));
+    }
+
     for source in &sources {
-        let pi_findings = crate::adapters::prompt_injection::evaluate(&files);
-        for f in pi_findings {
-            findings.push(ScanFinding::from_generic(
-                f.rule_id,
-                f.status,
-                f.evidence,
-                f.matrix_source,
-                &policy_revision,
-            ));
-        }
-
-        let egress_findings = crate::adapters::network_egress::evaluate(&files);
-        for f in egress_findings {
-            findings.push(ScanFinding::from_generic(
-                f.rule_id,
-                f.status,
-                f.evidence,
-                f.matrix_source,
-                &policy_revision,
-            ));
-        }
-
-        let supply_findings = crate::adapters::supply_chain::evaluate(&files);
-        for f in supply_findings {
-            findings.push(ScanFinding::from_generic(
-                f.rule_id,
-                f.status,
-                f.evidence,
-                f.matrix_source,
-                &policy_revision,
-            ));
-        }
-        let unsafe_findings = crate::adapters::unsafe_actions::evaluate(&files);
-        for f in unsafe_findings {
-            findings.push(ScanFinding::from_generic(
-                f.rule_id,
-                f.status,
-                f.evidence,
-                f.matrix_source,
-                &policy_revision,
-            ));
-        }
-
-        let secrets_findings = crate::adapters::secrets_scanning::evaluate(&files);
-        for f in secrets_findings {
-            findings.push(ScanFinding::from_generic(
-                f.rule_id,
-                f.status,
-                f.evidence,
-                f.matrix_source,
-                &policy_revision,
-            ));
-        }
-
-        let taint_findings = crate::adapters::taint_analysis::evaluate(&files);
-        for f in taint_findings {
-            findings.push(ScanFinding::from_generic(
-                f.rule_id,
-                f.status,
-                f.evidence,
-                f.matrix_source,
-                &policy_revision,
-            ));
-        }
         if source.language_hint == crate::domain::source::LanguageHint::Yaml {
             if source.path.contains(".github/workflows/") {
                 let ci_findings = crate::adapters::ci::evaluate(&source.content, &source.path);
@@ -246,6 +247,15 @@ pub fn run(root: &Path) -> Result<ScanResult, ScanError> {
             });
         }
     }
+
+    let mut seen = std::collections::HashSet::new();
+    findings.retain(|f| {
+        let key = format!(
+            "{}-{}-{:?}-{}-{}",
+            f.rule_id, f.policy_revision, f.status, f.evidence.path, f.evidence.line
+        );
+        seen.insert(key)
+    });
 
     let evidence = EvidenceArtifact::from_files(profile, &files, findings.clone());
 

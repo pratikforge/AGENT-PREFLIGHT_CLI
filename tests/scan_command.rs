@@ -246,3 +246,113 @@ fn scan_surfaces_claude_permission_mode_findings() {
     assert!(evidence.contains("claude-query-permission-mode"));
     assert!(evidence.contains("Verified"));
 }
+
+#[test]
+fn multifile_scan_emits_one_finding_for_one_violation() {
+    let repo = tempdir().expect("temporary repository");
+    fs::write(
+        repo.path().join("a.py"),
+        "from agents import function_tool\n@function_tool\ndef f(): pass\neval('print(1)')\n",
+    )
+    .expect("source a");
+    fs::write(repo.path().join("b.py"), "def b(): pass\n").expect("source b");
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["scan", repo.path().to_str().expect("utf-8 temp path")])
+        .assert()
+        .success();
+
+    let evidence = fs::read_to_string(repo.path().join(".agent-preflight/evidence.yaml"))
+        .expect("evidence artifact");
+    assert_eq!(evidence.matches("rule_id: unsafe-eval").count(), 1);
+}
+
+#[test]
+fn multifile_scan_preserves_distinct_findings_from_distinct_files() {
+    let repo = tempdir().expect("temporary repository");
+    fs::write(
+        repo.path().join("a.py"),
+        "from agents import function_tool\n@function_tool\ndef f(): pass\neval('print(1)')\n",
+    )
+    .expect("source a");
+    fs::write(
+        repo.path().join("b.py"),
+        "from agents import function_tool\n@function_tool\ndef g(): pass\neval('print(2)')\n",
+    )
+    .expect("source b");
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["scan", repo.path().to_str().expect("utf-8 temp path")])
+        .assert()
+        .success();
+
+    let evidence = fs::read_to_string(repo.path().join(".agent-preflight/evidence.yaml"))
+        .expect("evidence artifact");
+    assert_eq!(evidence.matches("rule_id: unsafe-eval").count(), 2);
+}
+
+#[test]
+fn repeated_scan_has_stable_order_and_evidence() {
+    let repo = tempdir().expect("temporary repository");
+    fs::write(
+        repo.path().join("a.py"),
+        "from agents import function_tool\n@function_tool\ndef f(): pass\neval('print(1)')\n",
+    )
+    .expect("source a");
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["scan", repo.path().to_str().expect("utf-8 temp path")])
+        .assert()
+        .success();
+
+    let evidence1 = fs::read_to_string(repo.path().join(".agent-preflight/evidence.yaml")).unwrap();
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["scan", repo.path().to_str().expect("utf-8 temp path")])
+        .assert()
+        .success();
+
+    let evidence2 = fs::read_to_string(repo.path().join(".agent-preflight/evidence.yaml")).unwrap();
+    assert_eq!(evidence1, evidence2);
+}
+
+#[test]
+fn deduplication_does_not_suppress_per_file_yaml_posture_finding() {
+    let repo = tempdir().expect("temporary repository");
+    fs::create_dir_all(repo.path().join(".github/workflows")).unwrap();
+    fs::write(
+        repo.path().join("agent.py"),
+        "from agents import function_tool\n@function_tool\ndef f(): pass\n",
+    )
+    .unwrap();
+    fs::write(
+        repo.path().join(".github/workflows/ci.yml"),
+        "jobs:\n  build:\n    steps:\n      - run: make\n",
+    )
+    .unwrap();
+    fs::write(
+        repo.path().join(".github/workflows/deploy.yml"),
+        "jobs:\n  deploy:\n    steps:\n      - run: make deploy\n",
+    )
+    .unwrap();
+
+    Command::cargo_bin("agent-preflight")
+        .expect("binary should exist")
+        .args(["scan", repo.path().to_str().expect("utf-8 temp path")])
+        .assert()
+        .success();
+
+    let sources = agent_preflight::infra::safe_reader::SafeReader::default()
+        .read(&repo.path())
+        .unwrap();
+    println!("SOURCES:\n{:?}", sources);
+    let evidence = fs::read_to_string(repo.path().join(".agent-preflight/evidence.yaml"))
+        .expect("evidence artifact");
+    println!("EVIDENCE:\n{}", evidence);
+    assert!(evidence.contains("ci.yml"));
+    assert!(evidence.contains("deploy.yml"));
+}
