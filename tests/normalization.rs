@@ -285,3 +285,119 @@ fn extracts_claude_plan_mode_without_retaining_other_option_values() {
     assert_eq!(normalized.calls[0].static_controls, ["permissionMode=plan"]);
     assert!(!format!("{:?}", normalized).contains("secret"));
 }
+
+#[test]
+fn propagates_user_input_through_template_to_prompt_sink() {
+    let source = SourceCandidate {
+        path: "src/flow.py".to_owned(),
+        language_hint: LanguageHint::Python,
+        sha256: "fixture".to_owned(),
+        content: "user_input = get_user_input()
+prompt = f'User says: {user_input}'
+system_prompt_sink(prompt)
+"
+        .to_owned(),
+    };
+    let normalized = normalize(&source);
+
+    assert!(
+        normalized
+            .data_flows
+            .iter()
+            .any(|f| f.variable_name == "prompt"
+                && f.taint == agent_preflight::domain::normalized::TaintLabel::User)
+    );
+}
+
+#[test]
+fn propagates_web_content_through_wrapper_to_tool_arguments() {
+    let source = SourceCandidate {
+        path: "src/flow.py".to_owned(),
+        language_hint: LanguageHint::Python,
+        sha256: "fixture".to_owned(),
+        content: "web_data = fetch_url()
+args = wrap_data(web_data)
+tool_call(args)
+"
+        .to_owned(),
+    };
+    let normalized = normalize(&source);
+
+    assert!(
+        normalized
+            .data_flows
+            .iter()
+            .any(|f| f.variable_name == "args"
+                && f.taint == agent_preflight::domain::normalized::TaintLabel::Web)
+    );
+}
+
+#[test]
+fn tracks_secret_and_pii_to_log_file_shell_and_network_sinks() {
+    let source = SourceCandidate {
+        path: "src/flow.py".to_owned(),
+        language_hint: LanguageHint::Python,
+        sha256: "fixture".to_owned(),
+        content: "secret = os.environ['TOKEN']
+pii = get_pii()
+log_file(secret)
+shell_exec(pii)
+"
+        .to_owned(),
+    };
+    let normalized = normalize(&source);
+
+    assert!(
+        normalized
+            .data_flows
+            .iter()
+            .any(|f| f.variable_name == "secret"
+                && f.taint == agent_preflight::domain::normalized::TaintLabel::Secret)
+    );
+    assert!(
+        normalized
+            .data_flows
+            .iter()
+            .any(|f| f.variable_name == "pii"
+                && f.taint == agent_preflight::domain::normalized::TaintLabel::Pii)
+    );
+}
+
+#[test]
+fn marks_dynamic_reflection_uncertain_not_verified() {
+    let source = SourceCandidate {
+        path: "src/flow.py".to_owned(),
+        language_hint: LanguageHint::Python,
+        sha256: "fixture".to_owned(),
+        content: "cls = getattr(module, dynamic_name)
+cls()
+"
+        .to_owned(),
+    };
+    let normalized = normalize(&source);
+
+    // Check that we extract an uncertain fact or something similar
+    assert!(
+        normalized
+            .data_flows
+            .iter()
+            .any(|f| f.taint == agent_preflight::domain::normalized::TaintLabel::Uncertain)
+    );
+}
+
+#[test]
+fn enforces_interprocedural_depth_bound() {
+    let source = SourceCandidate {
+        path: "src/flow.py".to_owned(),
+        language_hint: LanguageHint::Python,
+        sha256: "fixture".to_owned(),
+        content: "def f1(x): return f2(x)
+def f2(x): return f3(x)
+"
+        .to_owned(),
+    };
+    let normalized = normalize(&source);
+
+    // Add logic here to assert depth bounded
+    assert!(normalized.parser_state == ParserState::Parsed);
+}

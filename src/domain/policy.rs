@@ -135,7 +135,7 @@ impl PolicyEvaluator {
             for agent in &ir.agents {
                 for tool in &agent.tools {
                     let mut status = None;
-                    
+
                     if rule.intent.contains("deny shell") && tool.implementation == "shell" {
                         status = Some(crate::domain::status::Status::Failed);
                     } else if rule.intent.contains("require explicit approval")
@@ -149,10 +149,12 @@ impl PolicyEvaluator {
 
                     if let Some(mut s) = status {
                         // Enforce evidence_required constraint
-                        if rule.evidence_required.iter().any(|r| r == "source") && agent.evidence.refs.is_empty() {
-                            if s == crate::domain::status::Status::Verified || s == crate::domain::status::Status::Failed {
-                                s = crate::domain::status::Status::CannotVerifyStatically;
-                            }
+                        if rule.evidence_required.iter().any(|r| r == "source")
+                            && agent.evidence.refs.is_empty()
+                            && (s == crate::domain::status::Status::Verified
+                                || s == crate::domain::status::Status::Failed)
+                        {
+                            s = crate::domain::status::Status::CannotVerifyStatically;
                         }
 
                         findings.push(crate::domain::ir::Finding {

@@ -346,8 +346,8 @@ fn deduplication_does_not_suppress_per_file_yaml_posture_finding() {
         .assert()
         .success();
 
-    let sources = agent_preflight::infra::safe_reader::SafeReader::default()
-        .read(&repo.path())
+    let sources = agent_preflight::infra::safe_reader::SafeReader
+        .read(repo.path())
         .unwrap();
     println!("SOURCES:\n{:?}", sources);
     let evidence = fs::read_to_string(repo.path().join(".agent-preflight/evidence.yaml"))

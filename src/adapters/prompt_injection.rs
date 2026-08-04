@@ -23,6 +23,19 @@ pub fn evaluate(files: &[NormalizedFile]) -> Vec<Finding> {
                 || flow.variable_name.contains("system_message")
             {
                 match flow.taint {
+                    TaintLabel::Uncertain => {
+                        has_direct_injection = true;
+                        findings.push(Finding {
+                            rule_id: "direct-prompt-injection".to_string(),
+                            status: Status::Failed,
+                            evidence: EvidenceRef {
+                                path: file.path.clone(),
+                                line: flow.span.line,
+                                parser_error: false,
+                            },
+                            matrix_source: "PROMPT_INJECTION".to_string(),
+                        });
+                    }
                     TaintLabel::User => {
                         has_direct_injection = true;
                         findings.push(Finding {
@@ -49,7 +62,11 @@ pub fn evaluate(files: &[NormalizedFile]) -> Vec<Finding> {
                             matrix_source: "PROMPT_INJECTION".to_string(),
                         });
                     }
-                    TaintLabel::Tool | TaintLabel::Secret | TaintLabel::Pii => {
+                    TaintLabel::Tool
+                    | TaintLabel::Secret
+                    | TaintLabel::Pii
+                    | TaintLabel::Retrieval
+                    | TaintLabel::System => {
                         has_safe_prompt = true;
                     }
                 }

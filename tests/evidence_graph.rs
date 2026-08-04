@@ -61,13 +61,13 @@ fn preserve_source_spans_through_serialization() {
 #[test]
 fn cycle_or_depth_limit_returns_bounded_uncertainty() {
     let mut ir = CapabilityIr::default();
-    
+
     // Create a chain of 101 nodes
     let mut current_node = EvidenceNode {
         origin: "node_0".to_string(),
         refs: vec![],
     };
-    
+
     for i in 1..=101 {
         let next_node = EvidenceNode {
             origin: format!("node_{}", i),
@@ -94,8 +94,9 @@ fn derived_evidence_identifies_parent_facts() {
         refs: vec![],
     };
     let mut ir = CapabilityIr::default();
-    ir.add_evidence_edge(source_node.clone(), derived_node.clone()).unwrap();
-    
+    ir.add_evidence_edge(source_node.clone(), derived_node.clone())
+        .unwrap();
+
     // Assert that the edge connects derived back to source
     let edge = ir.edges.first().unwrap();
     assert_eq!(edge.derived.origin, "derived_fact.txt");

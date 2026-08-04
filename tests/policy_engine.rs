@@ -51,7 +51,11 @@ fn evaluator_returns_expected_status() {
             dependencies: vec![],
             evidence: EvidenceNode {
                 origin: "test".to_string(),
-                refs: vec![agent_preflight::domain::evidence::EvidenceRef { path: "test.py".to_string(), line: 1, parser_error: false }],
+                refs: vec![agent_preflight::domain::evidence::EvidenceRef {
+                    path: "test.py".to_string(),
+                    line: 1,
+                    parser_error: false,
+                }],
             },
         }],
         edges: vec![],
@@ -84,7 +88,11 @@ fn evaluator_returns_expected_status() {
             dependencies: vec![],
             evidence: EvidenceNode {
                 origin: "test".to_string(),
-                refs: vec![agent_preflight::domain::evidence::EvidenceRef { path: "test.py".to_string(), line: 1, parser_error: false }],
+                refs: vec![agent_preflight::domain::evidence::EvidenceRef {
+                    path: "test.py".to_string(),
+                    line: 1,
+                    parser_error: false,
+                }],
             },
         }],
         edges: vec![],
@@ -146,10 +154,17 @@ fn policy_finding_retains_direct_source_span() {
     };
 
     let findings = evaluator.evaluate(&ir);
-    let finding = findings.iter().find(|f| f.rule_id == "span_test_rule").expect("Finding must exist");
-    
+    let finding = findings
+        .iter()
+        .find(|f| f.rule_id == "span_test_rule")
+        .expect("Finding must exist");
+
     // Assert that the exact source span from the IR is retained in the finding
-    let evidence_ref = finding.evidence.refs.first().expect("Must have evidence ref");
+    let evidence_ref = finding
+        .evidence
+        .refs
+        .first()
+        .expect("Must have evidence ref");
     assert_eq!(evidence_ref.path, "test_span.py");
     assert_eq!(evidence_ref.line, 42);
 }
@@ -199,9 +214,14 @@ fn missing_span_cannot_produce_verified_status() {
     };
 
     let findings = evaluator.evaluate(&ir_no_span);
-    let finding = findings.iter().find(|f| f.rule_id == "require_span_for_verified").expect("Finding must exist");
-    
-    // In our evaluator, it should downgrade to CannotVerifyStatically if there is no span
-    assert_eq!(finding.status, agent_preflight::domain::status::Status::CannotVerifyStatically);
-}
+    let finding = findings
+        .iter()
+        .find(|f| f.rule_id == "require_span_for_verified")
+        .expect("Finding must exist");
 
+    // In our evaluator, it should downgrade to CannotVerifyStatically if there is no span
+    assert_eq!(
+        finding.status,
+        agent_preflight::domain::status::Status::CannotVerifyStatically
+    );
+}

@@ -66,6 +66,9 @@ pub enum TaintLabel {
     Tool,
     Secret,
     Pii,
+    Uncertain,
+    Retrieval,
+    System,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]

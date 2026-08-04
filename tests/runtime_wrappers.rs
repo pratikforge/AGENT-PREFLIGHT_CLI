@@ -1,9 +1,7 @@
 use std::sync::{Arc, Mutex};
 use tempfile::TempDir;
 
-use agent_preflight::app::runtime::{
-    InterceptDecision, RuntimeApproval, RuntimeInterceptor, RuntimeRequest,
-};
+use agent_preflight::app::runtime::{RuntimeApproval, RuntimeInterceptor, RuntimeRequest};
 use agent_preflight::domain::contract::{Contract, Rule};
 
 fn create_test_contract(rules: Vec<Rule>) -> Contract {
