@@ -27,8 +27,8 @@ impl SafeReader {
         let mut walker = WalkBuilder::new(&root);
         walker
             .follow_links(false)
-            .hidden(false)
-            .standard_filters(true);
+            .standard_filters(true)
+            .hidden(false);
 
         for entry in walker.build() {
             let entry = entry.map_err(|_| ReaderError::WalkFailed)?;
