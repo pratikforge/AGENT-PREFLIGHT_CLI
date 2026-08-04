@@ -54,7 +54,9 @@ impl RuntimeInterceptor {
         let decision = self.evaluate(invocation);
         match decision {
             InterceptDecision::RequireApproval(ref rule_id) => {
-                #[allow(clippy::collapsible_if)] if let Some(appr) = approval { if &appr.rule_id == rule_id {
+                #[allow(clippy::collapsible_if)]
+                if let Some(appr) = approval {
+                    if &appr.rule_id == rule_id {
                         let now = SystemTime::now()
                             .duration_since(std::time::UNIX_EPOCH)
                             .unwrap()
@@ -147,5 +149,3 @@ impl RuntimeInterceptor {
         }
     }
 }
-
-

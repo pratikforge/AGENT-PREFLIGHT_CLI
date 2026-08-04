@@ -594,3 +594,44 @@ verification: "cargo +1.97.1 test --manifest-path agent-preflight/Cargo.toml --l
 - **What happened:** The CI failed with a hardcoded path error. I analyzed it, correctly identified the fix for scripts/verify-ci-workflow.ps1, wrote an implementation plan, but then directly ran git commit without ever executing multi_replace_file_content to actually apply the fix to the script. The commit naturally pushed the still-broken script, causing the exact same CI failure again.
 - **Exact procedure:** Planned a fix for a .ps1 script but omitted the tool execution step, then pushed the unmodified file.
 - **Prevention:** Before running git commit, explicitly verify that the planned tool call to edit the file has actually been executed, and run the script locally (TDD) as a final guardrail before committing.
+# 2026-08-03 — Incorrect repository path and missing cache-busting in installation script instructions
+
+- **What happened:** Provided a raw irm command without ?v=1 cache-busting parameter for a rapidly updated script, and possibly an incorrect repository name in the path.
+- **Cause:** Assumed GitHub's aw.githubusercontent.com would serve the latest commit instantly, but it caches for 5 minutes.
+- **Prevention:** Always append ?v=1 (or another dynamic cache-busting string) to raw GitHub URLs when the user needs to download a script that was just updated. Always double check exact repository names (e.g. AGENT-PREFLIGHT_CLI vs AGENT-PREFLIGHT-CLI).
+
+# 2026-08-03 — cargo install failed due to incorrect Rust toolchain version
+
+- **What happened:** Instructed the user to run cargo install --path ... which failed because it used their default Rust 1.94.0 toolchain instead of the project's pinned 1.97.1 toolchain.
+- **Cause:** Forgot that user's global cargo might resolve to an older version, and the project explicitly requires ustc 1.97.1 in Cargo.toml.
+- **Prevention:** Whenever instructing the user or running a cargo command in a project with a pinned rust version, explicitly specify the toolchain version (e.g., cargo +1.97.1 install --path ...).
+
+# 2026-08-03 — Invalid JavaScript syntax in a documentation verification snippet
+
+- **What happened:** A Node REPL verification command intended to count required TDD-plan headings failed with `SyntaxError: Invalid or unexpected token` before reading or modifying the plan.
+- **Exact procedure:** Used a compact JavaScript expression with escaped regular-expression literals in the Node REPL tool call while validating `spec/agent-safety-expansion-implementation-plan.md`.
+- **Prevention:** For Node REPL verification, prefer simple string splitting and `includes()` counts over escaped regular-expression literals embedded in tool-call source. Run the smallest syntax-safe check independently before combining multiple document assertions.
+
+# 2026-08-03 — Embedded Markdown delimiter broke a Node REPL verification string
+
+- **What happened:** The follow-up plan check failed with `SyntaxError: Unexpected identifier 'tests'` because a Markdown backtick was embedded inside the JavaScript template literal used by the Node REPL tool call.
+- **Exact procedure:** Counted Markdown-formatted test-module paths with `includes('`tests/')` inside a template-literal tool-call source.
+- **Prevention:** In Node REPL verification snippets, match plain path substrings such as `tests/` and never embed Markdown delimiters inside a template literal. Keep document checks to plain-string inputs.
+
+# 2026-08-04 — Graphify query assumed a missing saved interpreter path
+
+- **What happened:** A review-time Graphify query failed with `ENOENT` because `graphify-out/.graphify_python` was not present even though `graphify-out/graph.json` existed.
+- **Exact procedure:** Tried to read the optional saved Graphify interpreter path before checking whether the Graphify executable was available through the environment.
+- **Prevention:** When a Graphify graph exists, check for `.graphify_python` first; if it is absent, independently discover the installed `graphify` command or initialize Graphify before querying. Do not treat a missing interpreter-path helper file as absence of the graph.
+
+# 2026-08-04 — Combined Node REPL quality-gate snippet had unbalanced syntax
+
+- **What happened:** A review command intended to run formatting and strict test linting failed with `Unexpected token: ')'` before either quality gate executed.
+- **Exact procedure:** Combined two promisified command expressions in one Node REPL snippet and omitted the closing structure for the first error-handling expression.
+- **Prevention:** Run mandatory quality gates in separate Node REPL calls. This preserves independent results and prevents JavaScript composition errors from masking gate execution.
+
+# 2026-08-04 — Callback-based Node REPL error handler omitted its function closure
+
+- **What happened:** The isolated formatter wrapper repeated the `Unexpected token: ')'` error before invoking Cargo.
+- **Exact procedure:** Used `.catch(function(e){ return {...});` and closed the call before closing the callback function body.
+- **Prevention:** For Node REPL command execution, use a plain `try/catch` statement rather than chained callback error handlers. Keep one command and one result per snippet.

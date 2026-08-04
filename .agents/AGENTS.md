@@ -343,3 +343,23 @@ Release ZIP archives and tar archives may use different member-path prefixes. In
 
 98. Local TDD Verification Before Commit
 Before running git commit, explicitly verify that the planned tool call to edit the file has actually been executed, and run the script locally (TDD) as a final guardrail before committing. Never assume a file was edited just because the plan was written.
+99. Dynamic Cache-Busting for Raw Scripts
+When generating install commands that fetch scripts from raw.githubusercontent.com (e.g. irm), always append ?v=1 (or another dynamic cache-busting string) to the URL. GitHub caches raw files for up to 5 minutes, and failing to bypass the cache during iterative testing will cause the user to run an outdated script. Always double-check exact repository names and capitalization.
+
+100. Explicit Toolchains for Pinned Projects
+Whenever instructing the user or running a cargo command in a project with a pinned Rust version in its toolchain file or manifest, always explicitly specify the toolchain version (e.g. cargo +1.97.1 install --path ...). Never assume the user's default global cargo resolves to the project's exact required version.
+
+101. Syntax-Safe Node REPL Documentation Verification
+When validating Markdown plans through the Node REPL, prefer simple string splitting and `includes()` checks over escaped regular-expression literals embedded in tool-call source. Run a minimal syntax-safe assertion independently before combining several document checks.
+
+102. Plain-String Node REPL Markdown Checks
+When a Node REPL snippet is embedded in a JavaScript template literal, match plain text such as `tests/` rather than strings containing Markdown backticks or other template delimiters. Do not embed Markdown formatting delimiters in the snippet source.
+
+103. Graphify Interpreter-Path Fallback
+When `graphify-out/graph.json` exists but `.graphify_python` is absent, check for the installed `graphify` executable or initialize the tool before querying. Do not assume the optional saved interpreter path exists merely because the graph exists.
+
+104. Separate Node REPL Quality Gates
+When running mandatory quality gates through the Node REPL, invoke each gate in a separate tool call with independent error handling. Do not combine formatter and lint commands in one JavaScript expression.
+
+105. Prefer Try-Catch for Node REPL Command Errors
+For Node REPL command execution, prefer a plain `try/catch` statement over chained callback error handlers. This avoids unbalanced callback closures and keeps each gate readable.

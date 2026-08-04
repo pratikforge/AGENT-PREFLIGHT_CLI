@@ -46,6 +46,3 @@ pub fn evaluate(yaml_content: &str, path: &str) -> Vec<Finding> {
     }
     findings
 }
-
-
-
