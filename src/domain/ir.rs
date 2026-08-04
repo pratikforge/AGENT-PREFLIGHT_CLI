@@ -93,8 +93,25 @@ impl CapabilityIr {
         if self.is_ancestor(&derived.origin, &source.origin) {
             return Err("derivation cycle detected");
         }
+
+        // Depth limit detection
+        let depth = self.get_depth(&source.origin);
+        if depth >= 100 {
+            return Err("derivation depth limit exceeded");
+        }
+
         self.edges.push(EvidenceEdge { source, derived });
         Ok(())
+    }
+
+    fn get_depth(&self, node: &str) -> usize {
+        let mut max_depth = 0;
+        for edge in &self.edges {
+            if edge.derived.origin == node {
+                max_depth = max_depth.max(1 + self.get_depth(&edge.source.origin));
+            }
+        }
+        max_depth
     }
 
     fn is_ancestor(&self, potential_ancestor: &str, node: &str) -> bool {

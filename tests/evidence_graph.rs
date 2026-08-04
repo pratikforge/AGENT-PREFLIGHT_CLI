@@ -58,3 +58,46 @@ fn preserve_source_spans_through_serialization() {
     let deserialized: EvidenceNode = serde_json::from_str(&serialized).unwrap();
     assert_eq!(deserialized.refs[0].line, 42);
 }
+#[test]
+fn cycle_or_depth_limit_returns_bounded_uncertainty() {
+    let mut ir = CapabilityIr::default();
+    
+    // Create a chain of 101 nodes
+    let mut current_node = EvidenceNode {
+        origin: "node_0".to_string(),
+        refs: vec![],
+    };
+    
+    for i in 1..=101 {
+        let next_node = EvidenceNode {
+            origin: format!("node_{}", i),
+            refs: vec![],
+        };
+        let result = ir.add_evidence_edge(current_node.clone(), next_node.clone());
+        if i > 100 {
+            assert!(result.is_err(), "Should reject exceeding depth limit");
+            assert_eq!(result.unwrap_err(), "derivation depth limit exceeded");
+        } else {
+            assert!(result.is_ok());
+        }
+        current_node = next_node;
+    }
+}
+#[test]
+fn derived_evidence_identifies_parent_facts() {
+    let source_node = EvidenceNode {
+        origin: "source_fact.txt".to_string(),
+        refs: vec![],
+    };
+    let derived_node = EvidenceNode {
+        origin: "derived_fact.txt".to_string(),
+        refs: vec![],
+    };
+    let mut ir = CapabilityIr::default();
+    ir.add_evidence_edge(source_node.clone(), derived_node.clone()).unwrap();
+    
+    // Assert that the edge connects derived back to source
+    let edge = ir.edges.first().unwrap();
+    assert_eq!(edge.derived.origin, "derived_fact.txt");
+    assert_eq!(edge.source.origin, "source_fact.txt");
+}

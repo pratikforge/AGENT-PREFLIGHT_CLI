@@ -27,8 +27,8 @@ It is deliberately conservative: if it can't prove a control exists through dire
 
 ### Robust Multi-file Scan Aggregation & Posture Checks
 - **Intelligent Deduplication:** Aggregates repeated rule statuses across the entire repository instead of spamming with redundant findings. Evaluators run per source for whole-project context and per-file for CI YAML logic, outputting precise deduplicated evidence artifacts.
-- **Fail-Closed Safe Readers:** Robust traversal that securely analyzes hidden folders (like \.github/workflows\) while strictly avoiding path traversal escapes, symlink attacks, and enforcing strict depth and size limits.
-- **CI/CD Security Posture:** Beyond just agent Python/TS logic, Agent Preflight evaluates configuration files to flag insecure continuous integration postures.
+- **Fail-Closed Readers:** Robust traversal that analyzes hidden folders (like \.github/workflows\) while strictly avoiding path traversal escapes, symlink attacks, and enforcing strict depth and size limits.
+- **CI/CD Security Posture:** Beyond just agent Python/TS logic, Agent Preflight evaluates configuration files to flag risky continuous integration postures.
 
 ### Advanced Agent Protection Capabilities
 
