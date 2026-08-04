@@ -24,6 +24,13 @@ Agent Preflight is a **local, zero-dependency CLI** that statically scans an age
 
 It is deliberately conservative: if it can't prove a control exists through direct source patterns, the result is `CannotVerifyStatically`. **Uncertainty never becomes a green result.**
 
+### Advanced Agent Safety Capabilities
+
+Beyond static analysis, Agent Preflight now introduces an embedded **Runtime Safety Layer**:
+- **Cryptographic Runtime Approvals**: Intercept agent execution with canonical request digest verification, cryptographic nonce tracking to prevent replays, and strict policy-revision bindings.
+- **Redacted Append-Only Audit Trail**: A tamper-evident, cryptographically chained audit log (SHA-256) that fails-closed upon write failures and guarantees no raw secrets or PII leak into the logs.
+- **Generic Pre-Execution Guard**: Wrappers that sit between the agent framework and the actual tool executor, guaranteeing that unapproved or unrecognized capabilities are explicitly blocked *before* execution happens.
+
 ```mermaid
 flowchart LR
     A[Your agent repo] --> B["agent-preflight scan"]
