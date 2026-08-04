@@ -1,5 +1,9 @@
 pub mod contract;
 pub mod evidence;
+pub mod ir;
 pub mod normalized;
+pub mod policy;
+pub mod resolution;
+pub mod risk;
 pub mod source;
 pub mod status;

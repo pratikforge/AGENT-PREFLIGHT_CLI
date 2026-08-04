@@ -77,6 +77,7 @@ fn language_hint(path: &Path) -> Option<LanguageHint> {
     match path.extension().and_then(|extension| extension.to_str()) {
         Some("py") => Some(LanguageHint::Python),
         Some("ts" | "tsx" | "mts" | "cts") => Some(LanguageHint::TypeScript),
+        Some("yaml" | "yml") => Some(LanguageHint::Yaml),
         _ => None,
     }
 }

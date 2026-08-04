@@ -9,6 +9,10 @@ use crate::domain::normalized::{
 use crate::domain::source::{LanguageHint, SourceCandidate};
 
 pub fn normalize(source: &SourceCandidate) -> NormalizedFile {
+    if source.language_hint == LanguageHint::Yaml {
+        return empty_normalized(source, ParserState::Parsed);
+    }
+
     let mut parser = Parser::new();
     let language = grammar(source);
     let configured = parser.set_language(&language).is_ok();
@@ -37,6 +41,8 @@ fn empty_normalized(source: &SourceCandidate, parser_state: ParserState) -> Norm
         decorators: Vec::new(),
         calls: Vec::new(),
         literals: Vec::new(),
+        assignments: Vec::new(),
+        data_flows: Vec::new(),
     }
 }
 
@@ -52,6 +58,7 @@ fn grammar(source: &SourceCandidate) -> Language {
             tree_sitter_typescript::LANGUAGE_TSX.into()
         }
         LanguageHint::TypeScript => tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
+        LanguageHint::Yaml => unreachable!("YAML parsing does not use tree-sitter"),
     }
 }
 
@@ -71,6 +78,7 @@ fn collect_facts(node: Node<'_>, source: &[u8], normalized: &mut NormalizedFile)
             collect_typescript_import(node, source, normalized);
         }
         LanguageHint::TypeScript => {}
+        LanguageHint::Yaml => {}
     }
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
@@ -105,19 +113,34 @@ fn collect_direct_call(node: Node<'_>, source: &[u8], normalized: &mut Normalize
         return;
     };
     let call_text = node.utf8_text(source).ok();
-    let keywords: Vec<(String, bool)> = call_text
+    let keyword_arguments: Vec<(String, String)> = call_text
         .and_then(|text| text.split_once('(').map(|(_, arguments)| arguments))
         .and_then(|arguments| arguments.strip_suffix(')'))
         .map(|arguments| {
             arguments
                 .split(',')
                 .filter_map(|argument| argument.split_once('='))
-                .map(|(name, value)| (name.trim().to_owned(), value.trim() == "True"))
+                .map(|(name, value)| {
+                    let v = value.trim();
+                    let redacted = if v.starts_with('"') || v.starts_with('\'') {
+                        "<literal>"
+                    } else {
+                        v
+                    };
+                    (name.trim().to_owned(), redacted.to_owned())
+                })
                 .collect()
         })
         .unwrap_or_default();
+
+    let keywords: Vec<(String, bool)> = keyword_arguments
+        .iter()
+        .map(|(name, value)| (name.clone(), value == "True"))
+        .collect();
+
     normalized.calls.push(CallFact {
         callee: callee.to_owned(),
+        enclosing_function: find_enclosing_function(node, source),
         keyword_names: keywords.iter().map(|(name, _)| name.clone()).collect(),
         true_keywords: keywords
             .into_iter()
@@ -128,6 +151,7 @@ fn collect_direct_call(node: Node<'_>, source: &[u8], normalized: &mut Normalize
             .map(|_| vec!["permissionMode".to_owned()])
             .unwrap_or_default(),
         static_controls: call_text.map(extract_static_controls).unwrap_or_default(),
+        keyword_arguments,
         span: span(node),
     });
 }
@@ -181,6 +205,15 @@ fn extract_static_controls(text: &str) -> Vec<String> {
         .collect();
     if compact.contains("tool_config={") && compact.contains("\"require_approval\":\"always\"") {
         controls.push("hosted_mcp_require_approval=always".to_owned());
+    }
+    if text.contains("rm -rf") {
+        controls.push("rm -rf".to_owned());
+    }
+    if text.contains("format ") {
+        controls.push("format ".to_owned());
+    }
+    if text.contains("mkfs") {
+        controls.push("mkfs".to_owned());
     }
     controls
 }
@@ -295,4 +328,18 @@ fn span(node: Node<'_>) -> Span {
         line: u32::try_from(position.row + 1).unwrap_or(u32::MAX),
         column: u32::try_from(position.column + 1).unwrap_or(u32::MAX),
     }
+}
+
+fn find_enclosing_function(node: Node<'_>, source: &[u8]) -> Option<String> {
+    let mut current = node.parent();
+    while let Some(parent) = current {
+        if (parent.kind() == "function_definition" || parent.kind() == "method_definition")
+            && let Some(name_node) = parent.child_by_field_name("name")
+            && let Ok(name) = name_node.utf8_text(source)
+        {
+            return Some(name.to_owned());
+        }
+        current = parent.parent();
+    }
+    None
 }

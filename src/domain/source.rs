@@ -10,4 +10,5 @@ pub struct SourceCandidate {
 pub enum LanguageHint {
     Python,
     TypeScript,
+    Yaml,
 }

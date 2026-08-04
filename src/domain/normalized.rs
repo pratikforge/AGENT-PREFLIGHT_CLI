@@ -30,10 +30,12 @@ pub struct DecoratorFact {
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
 pub struct CallFact {
     pub callee: String,
+    pub enclosing_function: Option<String>,
     pub keyword_names: Vec<String>,
     pub true_keywords: Vec<String>,
     pub property_names: Vec<String>,
     pub static_controls: Vec<String>,
+    pub keyword_arguments: Vec<(String, String)>,
     pub span: Span,
 }
 
@@ -50,6 +52,29 @@ pub struct LiteralFact {
     pub span: Span,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct AssignmentFact {
+    pub name: String,
+    pub value: String,
+    pub span: Span,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+pub enum TaintLabel {
+    User,
+    Web,
+    Tool,
+    Secret,
+    Pii,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct DataFlowFact {
+    pub variable_name: String,
+    pub taint: TaintLabel,
+    pub span: Span,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NormalizedFile {
     pub path: String,
@@ -59,4 +84,6 @@ pub struct NormalizedFile {
     pub decorators: Vec<DecoratorFact>,
     pub calls: Vec<CallFact>,
     pub literals: Vec<LiteralFact>,
+    pub assignments: Vec<AssignmentFact>,
+    pub data_flows: Vec<DataFlowFact>,
 }
