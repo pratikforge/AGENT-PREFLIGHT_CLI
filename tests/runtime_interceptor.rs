@@ -1,4 +1,3 @@
-use std::path::Path;
 use tempfile::TempDir;
 
 use agent_preflight::app::runtime::{InterceptDecision, RuntimeInterceptor, ToolInvocation};

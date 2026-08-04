@@ -1,4 +1,3 @@
-use std::path::Path;
 use std::time::SystemTime;
 use tempfile::TempDir;
 
