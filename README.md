@@ -131,7 +131,7 @@ Lists all pending capability rules and their verification status.
 
 ### Step 3 — Approve the contract
 
-As the repository owner, explicitly approve rules you have reviewed:
+As the repository owner, explicitly approve rules you've reviewed:
 
 ```bash
 agent-preflight approve ./my-agent-repo openai-function-tool-approval
@@ -261,7 +261,7 @@ Read the full [limitations document](docs/limitations.md) before relying on resu
 
 ## Contributing
 
-Contributions are welcome. Please ensure your changes:
+Contributions are welcome! Please ensure your changes:
 
 1. Add a source-grounded fixture for each new rule
 2. Keep `CannotVerifyStatically` conservative — uncertainty must never become a green result
