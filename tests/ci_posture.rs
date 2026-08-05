@@ -52,7 +52,8 @@ jobs:
 
 #[test]
 fn ci_uses_pinned_cargo_commands() {
-    let content = fs::read_to_string(".github/workflows/agent-preflight-ci.yml").expect("missing ci yaml");
+    let content =
+        fs::read_to_string(".github/workflows/agent-preflight-ci.yml").expect("missing ci yaml");
     for line in content.lines() {
         if line.contains("cargo ") && !line.contains("cargo +1.97.1") {
             panic!("Found unpinned cargo command in CI config: {}", line);
@@ -65,7 +66,10 @@ fn pre_commit_uses_pinned_cargo_commands() {
     let content = fs::read_to_string(".pre-commit-config.yaml").expect("missing pre-commit yaml");
     for line in content.lines() {
         if line.contains("cargo ") && !line.contains("cargo +1.97.1") {
-            panic!("Found unpinned cargo command in pre-commit config: {}", line);
+            panic!(
+                "Found unpinned cargo command in pre-commit config: {}",
+                line
+            );
         }
     }
 }
