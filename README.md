@@ -1,66 +1,168 @@
-# Agent Preflight
+<p align="center">
+  <h1 align="center">Agent Preflight</h1>
+  <p align="center">
+    <strong>The missing security layer for autonomous AI agents.</strong>
+  </p>
+  <p align="center">
+    Scan. Approve. Guard. Audit. — Before your agent touches production.
+  </p>
+</p>
 
-### Turn agent permissions into a contract — before they become a production surprise.
-
-[![CI](https://github.com/pratikforge/AGENT-PREFLIGHT_CLI/actions/workflows/agent-preflight-ci.yml/badge.svg?branch=main)](https://github.com/pratikforge/AGENT-PREFLIGHT_CLI/actions/workflows/agent-preflight-ci.yml)
-[![Rust](https://img.shields.io/badge/Rust-1.97.1-orange?logo=rust)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-
----
-
-## The Problem
-
-AI agent frameworks make it trivially easy to declare powerful tools — tools that can delete users, execute shell commands, write files, or call external APIs. But there is **no standard way to prove, before execution**, that those tools have the human-approval controls the repository owner intended.
-
-Observability products tell you what happened at runtime. **Agent Preflight answers a different question:**
-
-> Does this repository contain source-level evidence for the capability controls its owner approved?
+<p align="center">
+  <a href="https://github.com/pratikforge/AGENT-PREFLIGHT_CLI/actions/workflows/agent-preflight-ci.yml"><img src="https://github.com/pratikforge/AGENT-PREFLIGHT_CLI/actions/workflows/agent-preflight-ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/Rust-1.97.1-orange?logo=rust" alt="Rust"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
+</p>
 
 ---
 
-## The Solution
+## What is Agent Preflight?
 
-Agent Preflight is a **local, zero-dependency CLI** that statically scans an agent codebase for permission and approval controls, records source-level evidence, and lets the repository owner approve a capability contract — all **without ever executing the scanned code**.
+Agent Preflight is a **zero-dependency CLI tool** that brings end-to-end security governance to AI agent codebases. It works in two layers:
 
-It is deliberately conservative: if it can't prove a control exists through direct source patterns, the result is `CannotVerifyStatically`. **Uncertainty never becomes a green result.**
+1. **Static Analysis** — Scans your agent's source code for permission and approval controls, generates source-level evidence, and lets you lock a capability contract — all without ever executing the scanned code.
 
+2. **Runtime Protection** — Embeds pre-execution guards, cryptographic approval verification, network egress control, and tamper-evident audit logging directly into your agent's execution pipeline.
 
-### Robust Multi-file Scan Aggregation & Posture Checks
-- **Intelligent Deduplication:** Aggregates repeated rule statuses across the entire repository instead of spamming with redundant findings. Evaluators run per source for whole-project context and per-file for CI YAML logic, outputting precise deduplicated evidence artifacts.
-- **Fail-Closed Readers:** Robust traversal that analyzes hidden folders (like \.github/workflows\) while strictly avoiding path traversal escapes, symlink attacks, and enforcing strict depth and size limits.
-- **CI/CD Security Posture:** Beyond just agent Python/TS logic, Agent Preflight evaluates configuration files to flag risky continuous integration postures.
+> **The core principle:** If Agent Preflight can't *prove* a control exists through direct source evidence, the result is `CannotVerifyStatically`. Uncertainty never becomes a green light.
 
-### Advanced Agent Protection Capabilities
+### Supported Agent Frameworks
 
-Beyond static analysis, Agent Preflight now introduces an embedded **Runtime Protection Layer**:
-- **Cryptographic Runtime Approvals**: Intercept agent execution with canonical request digest verification, cryptographic nonce tracking to prevent replays, and strict policy-revision bindings.
-- **Redacted Append-Only Audit Trail**: A tamper-evident, cryptographically chained audit log (SHA-256) that fails-closed upon write failures and guarantees no raw secrets or PII leak into the logs.
-- **Generic Pre-Execution Guard**: Wrappers that sit between the agent framework and the actual tool executor, guaranteeing that unapproved or unrecognized capabilities are explicitly blocked *before* execution happens.
+| Framework | Language | What it detects |
+| --- | --- | --- |
+| **OpenAI Agents SDK** | Python | `@function_tool(needs_approval=True)`, `Agent.as_tool(...)` approval, local/hosted MCP approval, Shell/ApplyPatch controls |
+| **Google ADK** | Python | `FunctionTool(..., require_confirmation=True)` and explicit False/uncertain outcomes |
+| **Claude Agent SDK** | TypeScript, Python | `dontAsk` with allow-lists, read-only `plan` mode, `bypassPermissions` detection |
+
+---
+
+## Key Features
+
+### Deep Static Analysis
+- **Typed Source-to-Sink Flow Tracking** — Traces data from untrusted sources (user input, web content) through templates and wrappers all the way to privileged sinks (system prompts, shell execution). Not regex — real inter-procedural flow analysis.
+- **Prompt Injection Detection** — Catches direct overrides, base64-encoded payloads, multilingual role-play attacks, and tool-output injection paths before they reach high-impact actions.
+- **Intelligent Multi-file Aggregation** — Deduplicates findings across the entire repository. One violation, one finding — not a wall of noise.
+
+### Runtime Protection Layer
+- **Pre-Execution Guards** — SDK-specific wrappers for OpenAI, Claude, and Google ADK that physically intercept tool calls and block unapproved actions *before* execution. Not logging — blocking.
+- **Cryptographic Approval Claims** — Every approval is bound to a policy revision, caller identity, request digest, and time window. Single-use nonces prevent replay attacks.
+- **Network Egress Control** — Runtime DNS resolver guard that blocks connections to private IP ranges, cloud metadata endpoints (169.254.x.x), and detects DNS-rebinding attacks.
+
+### Tamper-Evident Auditing
+- **Hash-Chained Audit Trail** — Every execution decision is recorded in an append-only log chained via SHA-256. Modify or delete a record and the chain breaks — instantly detectable.
+- **Zero-Leakage Redaction** — Raw arguments, API keys, and PII are structurally redacted and replaced with stable fingerprints before touching storage. The system fails closed if an audit write fails.
+
+### Supply Chain and CI Governance
+- **Deterministic SBOM Generation** — Parses lock files, manifests, workflows, and container definitions to produce byte-stable Software Bills of Materials.
+- **CI/CD Posture Checks** — Flags unpinned GitHub Actions, missing OIDC, overly permissive tokens (`write-all`), and unprotected workflows.
+- **Advisory Integration** — Cross-references dependencies against known vulnerability databases.
+
+---
+
+## Installation
+
+### Option A — One-Line Install (Recommended)
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/pratikforge/AGENT-PREFLIGHT_CLI/main/install.ps1 | iex
+```
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/pratikforge/AGENT-PREFLIGHT_CLI/main/install.sh | bash
+```
+
+### Option B — Build from Source
+
+Requires [Rust 1.97.1+](https://www.rust-lang.org/tools/install).
+
+```bash
+git clone https://github.com/pratikforge/AGENT-PREFLIGHT_CLI.git
+cd AGENT-PREFLIGHT_CLI
+cargo build --release --locked
+```
+
+The binary will be at `target/release/agent-preflight` (or `agent-preflight.exe` on Windows).
+
+---
+
+## User Guide
+
+### The Workflow
+
+Agent Preflight follows a simple 4-step loop:
 
 ```mermaid
 flowchart LR
-    A[Your agent repo] --> B["agent-preflight scan"]
+    A[Your agent repo] --> B["scan"]
     B --> C[Evidence + proposed contract]
-    C --> D{Owner review}
+    C --> D{Owner reviews}
     D -->|Approve| E[Locked contract]
-    D -->|Needs repair| F[Markdown repair task]
-    F --> G[Developer fixes source]
-    E --> H["agent-preflight verify --ci"]
-    H --> I{Deterministic result}
-    I -->|Exit 0 · Verified| J[CI continues ✓]
-    I -->|Exit 1 · Failed| K[Pipeline blocked ✗]
+    D -->|Needs work| F[Repair task]
+    F --> G[Fix source code]
+    G --> B
+    E --> H["verify --ci"]
+    H -->|Exit 0| I["CI passes"]
+    H -->|Exit 1| J["Pipeline blocked"]
 ```
+
+### Step 1 — Scan your repository
+
+```bash
+agent-preflight scan ./my-agent-repo
+```
+
+This generates a `.agent-preflight/` directory containing:
+
+| File | What it contains |
+| --- | --- |
+| `evidence.yaml` | Exactly where in your source each finding was located |
+| `contract.proposed.yaml` | Proposed capability contract for your review |
+| `report.md` | Human-readable scan summary |
+
+### Step 2 — Review what was found
+
+```bash
+agent-preflight review ./my-agent-repo
+```
+
+Lists all pending capability rules and their verification status.
+
+### Step 3 — Approve the contract
+
+As the repository owner, explicitly approve rules you have reviewed:
+
+```bash
+agent-preflight approve ./my-agent-repo openai-function-tool-approval
+```
+
+### Step 4 — Verify in CI
+
+```bash
+agent-preflight verify ./my-agent-repo --ci
+```
+
+Returns deterministic exit codes that integrate directly into any CI pipeline.
+
+### Repair Tasks
+
+If a rule fails verification, generate a structured repair task:
+
+```bash
+agent-preflight task ./my-agent-repo openai-function-tool-approval
+```
+
+This produces a Markdown file describing exactly what needs to change — without ever editing your source code.
 
 ---
 
+### Concrete Example
 
-
-## End-to-End Walkthrough
-
-Here's a concrete example. Imagine you have an OpenAI Agents SDK project with this tool:
+Imagine you have an OpenAI Agents SDK project with a dangerous tool:
 
 ```python
-# agent.py — a dangerous tool with NO approval control
+# agent.py — no approval control
 from agents import function_tool
 
 @function_tool
@@ -68,52 +170,15 @@ def delete_user() -> None:
     pass
 ```
 
-### Step 1 — Scan the repository
+Run the workflow:
 
 ```bash
-agent-preflight scan ./my-agent-repo
-# scan complete: openai-agents-sdk (1 file)
+agent-preflight scan ./my-repo
+agent-preflight approve ./my-repo openai-function-tool-approval
+agent-preflight verify ./my-repo --ci    # Exit 1 (FAIL)
 ```
 
-This creates a `.agent-preflight/` directory inside your repo with three files:
-
-| File | Purpose |
-| --- | --- |
-| `evidence.yaml` | Exactly where in your source code each finding was located |
-| `contract.proposed.yaml` | A proposed capability contract, waiting for your review |
-| `report.md` | A short human-readable summary of the scan |
-
-### Step 2 — Review pending capabilities
-
-```bash
-agent-preflight review ./my-agent-repo
-# Pending capability rules:
-# - openai-function-tool-approval: cannot_verify_statically
-```
-
-The tool found `delete_user()` is decorated with `@function_tool` but has **no `needs_approval=True`** — so it flags it as unverifiable.
-
-### Step 3 — Approve the contract
-
-As the repository owner, you explicitly approve the rule to lock it into your contract:
-
-```bash
-agent-preflight approve ./my-agent-repo openai-function-tool-approval
-# approved `openai-function-tool-approval`
-```
-
-### Step 4 — Run the CI verification gate
-
-```bash
-agent-preflight verify ./my-agent-repo --ci
-# Exit code: 1  ← verification FAILED
-```
-
-The CI gate **correctly blocks** the pipeline. You approved the rule, but the source code still doesn't have the required approval control.
-
-### Step 5 — Fix the source code
-
-Add the approval flag to your tool:
+The gate correctly blocks your pipeline. Now fix the source:
 
 ```diff
 - @function_tool
@@ -122,143 +187,15 @@ Add the approval flag to your tool:
       pass
 ```
 
-### Step 6 — Re-scan and verify
+Re-scan and verify:
 
 ```bash
-agent-preflight scan ./my-agent-repo
-agent-preflight approve ./my-agent-repo openai-function-tool-approval
-agent-preflight verify ./my-agent-repo --ci
-# Exit code: 0  ← verification PASSED ✓
+agent-preflight scan ./my-repo
+agent-preflight approve ./my-repo openai-function-tool-approval
+agent-preflight verify ./my-repo --ci    # Exit 0 (PASS)
 ```
 
-The contract now matches the source. CI continues.
-
-> **Key point:** Agent Preflight never edited your code. It told you what was missing, you fixed it, and the tool verified the fix. That's the entire product loop.
-
----
-
-## Runtime Installation Prerequisites
-
-**IMPORTANT DISCLAIMER:** Static scanning alone cannot stop a running agent. The static verification tools ensure that your agent's source code contains the *declarations* for approval and integrity checks, but they do not enforce them when the agent is executing. You MUST deploy the embedded Runtime Protection Layer to enforce these controls.
-
-To install the runtime prerequisites:
-1. Ensure your deployment environment runs behind a hardened egress proxy (e.g. Envoy, Squid) enforcing the whitelist generated by `agent-preflight`.
-2. Configure your agent framework to utilize the `RuntimeGuard` wrapper provided in our adapters.
-3. Deploy the tamper-evident audit logger as a sidecar.
-
----
-
-## Installation
-
-### Option A — Terminal Installation (Recommended)
-
-You can download and install the pre-compiled binaries for **Windows**, **macOS**, and **Linux** directly from your terminal.
-
-**Windows (PowerShell):**
-```powershell
-irm https://raw.githubusercontent.com/pratikforge/AGENT-PREFLIGHT_CLI/main/install.ps1 | iex
-```
-
-**macOS / Linux (Bash):**
-```bash
-curl -fsSL https://raw.githubusercontent.com/pratikforge/AGENT-PREFLIGHT_CLI/main/install.sh | bash
-```
-
-These scripts will download the latest release and install it to your local path.
-
-### Option B — Build from source
-
-Requires [Rust 1.97.1](https://www.rust-lang.org/tools/install) with `rustfmt` and `clippy`.
-
-```bash
-git clone https://github.com/pratikforge/AGENT-PREFLIGHT_CLI.git
-cd AGENT-PREFLIGHT_CLI
-cargo +1.97.1 build --release --locked
-```
-
-The binary will be at `target/release/agent-preflight` (or `target\release\agent-preflight.exe` on Windows).
-
----
-
-## CLI Commands
-
-```bash
-# Scan a repository and generate evidence + proposed contract
-agent-preflight scan <repository-path>
-
-# List capabilities waiting for owner review
-agent-preflight review <repository-path>
-
-# Approve a specific capability rule into the contract
-agent-preflight approve <repository-path> <rule-id>
-
-# Generate a Markdown repair task for a failed finding
-agent-preflight task <repository-path> <rule-id>
-
-# Run the deterministic CI verification gate
-agent-preflight verify <repository-path> --ci
-```
-
-All artifacts are stored inside the scanned repository at `.agent-preflight/`:
-
-```
-.agent-preflight/
-├── contract.yaml        # Owner-approved capability contract
-├── evidence.yaml        # Source-level findings (file, line, column)
-├── report.md            # Human-readable scan summary
-├── result.yaml          # Deterministic CI verification result
-└── tasks/               # Repair task handoffs (no source edits)
-```
-
----
-
-## Supported Frameworks
-
-| Framework | Language | Direct controls detected |
-| --- | --- | --- |
-| **OpenAI Agents SDK** | Python | `@function_tool(needs_approval=True)`, `Agent.as_tool(..., needs_approval=True)`, local MCP `require_approval="always"`, Shell/ApplyPatch approval, hosted MCP approval |
-| **Google ADK** | Python | `FunctionTool(..., require_confirmation=True)` and explicit `False`/uncertain outcomes |
-| **Claude Agent SDK** | TypeScript, TSX, Python | Literal `dontAsk` with an allow-list, read-only `plan` mode, explicit `bypassPermissions` failure |
-
-The adapters are framework-specific, but the stored capability contract is **framework-neutral**.
-
----
-
-## What It Does Not Do
-
-This tool has an intentionally narrow scope:
-
-- ❌ Does **not** import or execute the scanned repository
-- ❌ Does **not** invoke agents, tools, subprocesses, models, or network calls
-- ❌ Does **not** silently edit source code or CI configuration
-- ❌ Does **not** claim a repository is bulletproof, compliant, or enterprise-grade
-- ❌ Does **not** replace runtime evaluations, tracing, or threat modeling
-- ❌ Does **not** guess through dynamic configuration, wrappers, or generated code
-
----
-
-## Try It Yourself — Built-in Demo
-
-The repository ships with before/after demo fixtures so you can try the full workflow without any external dependencies:
-
-```bash
-# Copy the "before" fixture to a temp directory
-cp -r fixtures/demo/openai_before /tmp/demo-repo
-
-# Run the full workflow
-agent-preflight scan /tmp/demo-repo
-agent-preflight review /tmp/demo-repo
-agent-preflight approve /tmp/demo-repo openai-function-tool-approval
-agent-preflight verify /tmp/demo-repo --ci    # ← Exits 1 (FAIL)
-
-# Now manually add needs_approval=True in /tmp/demo-repo/agent.py
-# Then re-scan and verify:
-agent-preflight scan /tmp/demo-repo
-agent-preflight approve /tmp/demo-repo openai-function-tool-approval
-agent-preflight verify /tmp/demo-repo --ci    # ← Exits 0 (PASS ✓)
-```
-
-On **Windows PowerShell**, replace `cp -r` with `Copy-Item -Recurse` and use `agent-preflight.exe`.
+> **Agent Preflight never edited your code.** It told you what was missing, you fixed it, and the tool verified the fix.
 
 ---
 
@@ -268,64 +205,70 @@ Deterministic exit codes make CI integration straightforward:
 
 | Code | Meaning |
 | ---: | --- |
-| `0` | Completed or verified |
-| `1` | Approved control failed verification |
+| `0` | Verified — all approved controls are present |
+| `1` | Failed — an approved control is missing or broken |
 | `2` | Invalid input or contract state |
-| `3` | Unsupported repository / profile |
+| `3` | Unsupported repository or framework |
 | `4` | Cannot verify statically / parse uncertainty |
 | `5` | Internal failure |
 
 ---
 
-## Repository Layout
+## Project Structure
 
 ```
 .
 ├── src/
-│   ├── adapters/       # Framework-specific static analysis (OpenAI, ADK, Claude)
-│   ├── app/            # Application commands (scan, review, approve, verify, task)
-│   ├── domain/         # Core domain model and capability contract types
-│   ├── infra/          # Bounded filesystem reader with depth/size/symlink limits
+│   ├── adapters/       # Framework-specific analysis (OpenAI, ADK, Claude)
+│   ├── app/            # CLI commands + runtime protection layer
+│   ├── domain/         # Core types: contracts, findings, status model
+│   ├── infra/          # Bounded filesystem reader with security limits
 │   └── render/         # Output formatting and report generation
-├── tests/              # 15 test suites: adapters, parser, security, fixtures, CLI
+├── tests/              # 80+ tests across 30+ test suites
 ├── fixtures/           # 60+ fixtures: direct, dynamic, malformed, demo repos
-├── scripts/            # Cross-platform CI fixture evaluation runners
-└── docs/               # Demo walkthrough and limitation notes
-.github/workflows/      # Three-OS CI: Ubuntu, macOS, Windows
+├── docs/
+│   ├── runbooks/       # Incident response guides
+│   └── limitations.md  # Honest scope boundaries
+└── .github/workflows/  # CI: Ubuntu, macOS, Windows
 ```
 
 ---
 
-## Testing & Quality Gates
+## Scope and Limitations
 
-The project enforces strict quality gates across all three platforms in CI:
+Agent Preflight is intentionally conservative. Be aware of its boundaries:
 
-```bash
-cargo fmt --check                 # Code formatting
-cargo clippy -- -D warnings       # Lint with zero warnings
-cargo test --locked               # Full test suite
-cargo deny check                  # Dependency license & advisory audit
-cargo audit                       # Known vulnerability scan
-cargo build --release --locked    # Release build verification
-```
-
-The test suite covers adapter contracts, parser boundaries, malformed input, path traversal escape, symlink rejection, size/depth limits, deterministic artifact output, redacted evidence, CI exit codes, and cross-platform fixture evaluation.
-
----
-
-## Scope & Limitations
-
-This is a **bounded static-analysis tool**. It is intentionally conservative:
-
-- Runtime authorization behavior is outside the proof boundary
-- Arbitrary data-flow resolution is not attempted
-- Unsupported languages and generated policy produce uncertainty
+- Static analysis cannot enforce controls at runtime — deploy the Runtime Protection Layer for that
 - Aliases, wrappers, and dynamic configuration result in `CannotVerifyStatically`
+- Arbitrary data-flow resolution across module boundaries is not attempted
+- Unsupported languages and generated policies produce uncertainty, not false positives
 
-Read the full [limitations](docs/limitations.md) before relying on a result.
+Read the full [limitations document](docs/limitations.md) before relying on results in a critical pipeline.
+
+---
+
+## Documentation
+
+| Resource | Description |
+| --- | --- |
+| [Limitations](docs/limitations.md) | Honest scope boundaries and what the tool does not do |
+| [Policy Update Runbook](docs/runbooks/policy_update.md) | How to update and roll out policy changes |
+| [Audit Verification Runbook](docs/runbooks/audit_verification.md) | Verifying audit trail integrity |
+| [Approval Compromise Runbook](docs/runbooks/approval_compromise.md) | Incident response for compromised approvals |
+| [Rollback Runbook](docs/runbooks/rollback.md) | Rolling back to a previous known-good state |
+
+---
+
+## Contributing
+
+Contributions are welcome. Please ensure your changes:
+
+1. Add a source-grounded fixture for each new rule
+2. Keep `CannotVerifyStatically` conservative — uncertainty must never become a green result
+3. Pass all quality gates: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test --locked`, `cargo deny check`, `cargo audit`
 
 ---
 
 ## License
 
-Agent Preflight is available under the [MIT License](LICENSE). Contributions must preserve the no-execution boundary, add a source-grounded fixture for each new rule, and keep `CannotVerifyStatically` conservative.
+Agent Preflight is available under the [MIT License](LICENSE).
