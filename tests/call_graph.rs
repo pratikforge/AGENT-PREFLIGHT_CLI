@@ -201,3 +201,50 @@ fn stop_recursive_cycle() {
     resolve_wrappers(std::slice::from_mut(&mut file), 10);
     // Success means it returned
 }
+
+#[test]
+fn enforces_interprocedural_depth_bound() {
+    let file = get_file(vec![
+        CallFact {
+            enclosing_function: Some("depth1".to_string()),
+            callee: "depth2".to_string(),
+            keyword_names: vec![],
+            true_keywords: vec![],
+            property_names: vec![],
+            static_controls: vec![],
+            keyword_arguments: vec![],
+            span: Span { line: 1, column: 0 },
+        },
+        CallFact {
+            enclosing_function: Some("depth2".to_string()),
+            callee: "Agent".to_string(),
+            keyword_names: vec![],
+            true_keywords: vec![],
+            property_names: vec![],
+            static_controls: vec![],
+            keyword_arguments: vec![],
+            span: Span { line: 2, column: 0 },
+        },
+        CallFact {
+            enclosing_function: Some("main".to_string()),
+            callee: "depth1".to_string(),
+            keyword_names: vec![],
+            true_keywords: vec![],
+            property_names: vec![],
+            static_controls: vec![],
+            keyword_arguments: vec![],
+            span: Span { line: 3, column: 0 },
+        },
+    ]);
+
+    let mut shallow_file = file.clone();
+    // Use depth limit of 1
+    resolve_wrappers(std::slice::from_mut(&mut shallow_file), 1);
+
+    // Check that Agent call is not in main
+    let agent_in_main = shallow_file
+        .calls
+        .iter()
+        .find(|c| c.enclosing_function.as_deref() == Some("main") && c.callee == "Agent");
+    assert!(agent_in_main.is_none());
+}

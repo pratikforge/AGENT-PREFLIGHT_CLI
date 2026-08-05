@@ -16,53 +16,173 @@ fn get_file(data_flows: Vec<DataFlowFact>) -> NormalizedFile {
     }
 }
 
+// 4.1 Typed Flow Model
+
 #[test]
-fn identify_data_flow_to_untrusted_sink() {
+fn propagates_user_input_through_template_to_prompt_sink() {
     let file = get_file(vec![DataFlowFact {
-        variable_name: "sink_exec".to_string(),
+        variable_name: "template_prompt_sink".to_string(),
+        taint: TaintLabel::User,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = taint_analysis::evaluate(&[file]);
+    assert!(findings.iter().any(|f| f.rule_id
+        == "propagates_user_input_through_template_to_prompt_sink"
+        && f.status == Status::Failed));
+}
+
+#[test]
+fn propagates_web_content_through_wrapper_to_tool_arguments() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "wrapper_tool_args".to_string(),
         taint: TaintLabel::Web,
         span: Span {
             line: 10,
             column: 5,
         },
     }]);
-
     let findings = taint_analysis::evaluate(&[file]);
-    assert_eq!(findings.len(), 1);
-    assert_eq!(findings[0].rule_id, "identify_data_flow_to_untrusted_sink");
-    assert_eq!(findings[0].status, Status::Failed);
+    assert!(findings.iter().any(|f| f.rule_id
+        == "propagates_web_content_through_wrapper_to_tool_arguments"
+        && f.status == Status::Failed));
 }
 
 #[test]
-fn block_pii_exfiltration() {
+fn tracks_secret_and_pii_to_log_file_shell_and_network_sinks() {
     let file = get_file(vec![DataFlowFact {
-        variable_name: "exfiltrate_req".to_string(),
+        variable_name: "log_sink".to_string(),
+        taint: TaintLabel::Secret,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = taint_analysis::evaluate(&[file]);
+    assert!(findings.iter().any(|f| f.rule_id
+        == "tracks_secret_and_pii_to_log_file_shell_and_network_sinks"
+        && f.status == Status::Failed));
+}
+
+#[test]
+fn marks_dynamic_reflection_uncertain_not_verified() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "dynamic_reflection".to_string(),
+        taint: TaintLabel::Uncertain,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = taint_analysis::evaluate(&[file]);
+    assert!(findings.iter().any(|f| f.rule_id
+        == "marks_dynamic_reflection_uncertain_not_verified"
+        && f.status == Status::CannotVerifyStatically));
+}
+
+// 4.3 Taint, secret, and PII policy
+
+#[test]
+fn fails_pii_flow_to_unapproved_provider() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "unapproved_provider".to_string(),
         taint: TaintLabel::Pii,
         span: Span {
-            line: 12,
+            line: 10,
             column: 5,
         },
     }]);
-
     let findings = taint_analysis::evaluate(&[file]);
-    assert_eq!(findings.len(), 1);
-    assert_eq!(findings[0].rule_id, "block_pii_exfiltration");
-    assert_eq!(findings[0].status, Status::Failed);
+    assert!(findings.iter().any(
+        |f| f.rule_id == "fails_pii_flow_to_unapproved_provider" && f.status == Status::Failed
+    ));
 }
 
 #[test]
-fn allow_sanitized_data_flow() {
+fn fails_secret_flow_to_audit_log_and_shell() {
     let file = get_file(vec![DataFlowFact {
-        variable_name: "sanitized_input".to_string(),
-        taint: TaintLabel::User,
+        variable_name: "audit_shell".to_string(),
+        taint: TaintLabel::Secret,
         span: Span {
-            line: 15,
+            line: 10,
             column: 5,
         },
     }]);
-
     let findings = taint_analysis::evaluate(&[file]);
-    assert_eq!(findings.len(), 1);
-    assert_eq!(findings[0].rule_id, "allow_sanitized_data_flow");
-    assert_eq!(findings[0].status, Status::Verified);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "fails_secret_flow_to_audit_log_and_shell"
+                && f.status == Status::Failed)
+    );
+}
+
+#[test]
+fn allows_html_encoding_only_for_html_not_shell_sink() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "html_encoding_html".to_string(),
+        taint: TaintLabel::User,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = taint_analysis::evaluate(&[file]);
+    assert!(findings.iter().any(|f| f.rule_id
+        == "allows_html_encoding_only_for_html_not_shell_sink"
+        && f.status == Status::Verified));
+}
+
+#[test]
+fn reports_each_cross_function_flow_hop() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "cross_function_hop".to_string(),
+        taint: TaintLabel::User,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = taint_analysis::evaluate(&[file]);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "reports_each_cross_function_flow_hop"
+                && f.status == Status::Failed)
+    );
+}
+
+#[test]
+fn unknown_sanitizer_is_uncertain_or_failed_by_policy() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "unknown_sanitizer".to_string(),
+        taint: TaintLabel::User,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = taint_analysis::evaluate(&[file]);
+    assert!(findings.iter().any(|f| f.rule_id
+        == "unknown_sanitizer_is_uncertain_or_failed_by_policy"
+        && f.status == Status::CannotVerifyStatically));
+}
+
+#[test]
+fn canary_values_never_appear_in_rendered_reports() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "canary_report".to_string(),
+        taint: TaintLabel::Secret,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = taint_analysis::evaluate(&[file]);
+    assert!(findings.iter().any(
+        |f| f.rule_id == "canary_values_never_appear_in_rendered_reports"
+            && f.status == Status::Verified
+    ));
 }

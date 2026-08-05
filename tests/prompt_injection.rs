@@ -17,55 +17,123 @@ fn get_file(data_flows: Vec<DataFlowFact>) -> NormalizedFile {
 }
 
 #[test]
-fn reject_direct_injection_attempts() {
+fn blocks_direct_user_override_reaching_system_prompt() {
     let file = get_file(vec![DataFlowFact {
-        variable_name: "prompt".to_string(),
+        variable_name: "system_prompt".to_string(),
         taint: TaintLabel::User,
         span: Span {
             line: 10,
             column: 5,
         },
     }]);
-
     let findings = prompt_injection::evaluate(&[file]);
-
-    assert_eq!(findings.len(), 1);
-    assert_eq!(findings[0].rule_id, "direct-prompt-injection");
-    assert_eq!(findings[0].status, Status::Failed);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "direct-prompt-injection" && f.status == Status::Failed)
+    );
 }
 
 #[test]
-fn flag_indirect_injection_from_web() {
+fn blocks_retrieved_web_instruction_reaching_tool_selection() {
     let file = get_file(vec![DataFlowFact {
-        variable_name: "system_message".to_string(),
+        variable_name: "tool_selection".to_string(),
         taint: TaintLabel::Web,
         span: Span {
-            line: 12,
+            line: 10,
             column: 5,
         },
     }]);
-
     let findings = prompt_injection::evaluate(&[file]);
-
-    assert_eq!(findings.len(), 1);
-    assert_eq!(findings[0].rule_id, "indirect-prompt-injection");
-    assert_eq!(findings[0].status, Status::Failed);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "indirect-prompt-injection" && f.status == Status::Failed)
+    );
 }
 
 #[test]
-fn allow_safe_system_prompt() {
+fn detects_base64_encoded_payload() {
     let file = get_file(vec![DataFlowFact {
-        variable_name: "prompt".to_string(),
-        taint: TaintLabel::Tool,
+        variable_name: "payload_base64".to_string(),
+        taint: TaintLabel::User,
         span: Span {
-            line: 15,
+            line: 10,
             column: 5,
         },
     }]);
-
     let findings = prompt_injection::evaluate(&[file]);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "base64-evasion" && f.status == Status::Failed)
+    );
+}
 
-    assert_eq!(findings.len(), 1);
-    assert_eq!(findings[0].rule_id, "safe-system-prompt");
-    assert_eq!(findings[0].status, Status::Verified);
+#[test]
+fn detects_multilingual_and_role_play_fixture() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "role_play_prompt".to_string(),
+        taint: TaintLabel::User,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = prompt_injection::evaluate(&[file]);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "role-play-evasion" && f.status == Status::Failed)
+    );
+}
+
+#[test]
+fn flags_tool_output_injection_before_high_impact_action() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "high_impact_action".to_string(),
+        taint: TaintLabel::Tool,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = prompt_injection::evaluate(&[file]);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "tool-output-injection" && f.status == Status::Failed)
+    );
+}
+
+#[test]
+fn does_not_verify_based_only_on_safe_identifier_name() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "safe_prompt_but_actually_user".to_string(),
+        taint: TaintLabel::User,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = prompt_injection::evaluate(&[file]);
+    assert!(!findings.iter().any(|f| f.status == Status::Verified));
+}
+
+#[test]
+fn allows_proven_isolation_with_typed_sanitizer() {
+    let file = get_file(vec![DataFlowFact {
+        variable_name: "system_prompt".to_string(),
+        taint: TaintLabel::System,
+        span: Span {
+            line: 10,
+            column: 5,
+        },
+    }]);
+    let findings = prompt_injection::evaluate(&[file]);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "safe-system-prompt" && f.status == Status::Verified)
+    );
 }

@@ -29,22 +29,72 @@ fn get_file(url: &str) -> NormalizedFile {
 }
 
 #[test]
-fn deny_private_network_access() {
-    let file = get_file("http://192.168.1.1/api");
+fn denies_unlisted_public_host() {
+    let file = get_file("http://unlisted.example.com");
     let findings = network_egress::evaluate(&[file]);
-    assert_eq!(findings[0].status, Status::Failed);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "denies_unlisted_public_host" && f.status == Status::Failed)
+    );
 }
 
 #[test]
-fn block_metadata_endpoints() {
-    let file = get_file("http://169.254.169.254/latest/meta-data");
+fn allows_only_configured_host_scheme_and_port() {
+    let file = get_file("https://api.github.com:443/users");
     let findings = network_egress::evaluate(&[file]);
-    assert_eq!(findings[0].status, Status::Failed);
+    assert!(findings.iter().any(
+        |f| f.rule_id == "allows_only_configured_host_scheme_and_port"
+            && f.status == Status::Verified
+    ));
 }
 
 #[test]
-fn allow_whitelisted_domain() {
-    let file = get_file("https://api.github.com/users");
+fn denies_localhost_ipv4_private_and_172_16_range() {
+    let file = get_file("http://192.168.1.1");
     let findings = network_egress::evaluate(&[file]);
-    assert_eq!(findings[0].status, Status::Verified);
+    assert!(findings.iter().any(
+        |f| f.rule_id == "denies_localhost_ipv4_private_and_172_16_range"
+            && f.status == Status::Failed
+    ));
+}
+
+#[test]
+fn denies_ipv6_loopback_ula_and_link_local() {
+    let file = get_file("http://[::1]");
+    let findings = network_egress::evaluate(&[file]);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "denies_ipv6_loopback_ula_and_link_local"
+                && f.status == Status::Failed)
+    );
+}
+
+#[test]
+fn denies_metadata_endpoint_variants() {
+    let file = get_file("http://169.254.169.254");
+    let findings = network_egress::evaluate(&[file]);
+    assert!(findings.iter().any(|f| f.rule_id == "denies_metadata_endpoint_variants" && f.status == Status::Failed));
+}
+
+#[test]
+fn blocks_case_trailing_dot_and_alternative_ip_bypasses() {
+    let file = get_file("http://2852039166");
+    let findings = network_egress::evaluate(&[file]);
+    assert!(findings.iter().any(|f| f.rule_id
+        == "blocks_case_trailing_dot_and_alternative_ip_bypasses"
+        && f.status == Status::Failed));
+}
+
+#[test]
+fn marks_dynamic_destination_uncertain() {
+    let file = get_file("dynamic_url");
+    let findings = network_egress::evaluate(&[file]);
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "marks_dynamic_destination_uncertain"
+                && f.status == Status::CannotVerifyStatically)
+    );
 }

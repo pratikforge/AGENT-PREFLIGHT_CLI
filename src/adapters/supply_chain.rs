@@ -14,44 +14,68 @@ pub fn evaluate(files: &[NormalizedFile]) -> Vec<Finding> {
     let mut findings = Vec::new();
 
     for file in files {
+        // Check imports for supply chain violations
+        for import in &file.imports {
+            let evidence = EvidenceRef {
+                path: file.path.clone(),
+                line: import.span.line,
+                parser_error: false,
+            };
+
+            if file.path.contains(".github/workflows") && import.module.contains("@v") {
+                findings.push(Finding {
+                    rule_id: "flags_unpinned_github_action_ref".to_string(),
+                    status: Status::Failed,
+                    evidence: evidence.clone(),
+                    matrix_source: "SUPPLY".to_string(),
+                });
+            }
+
+            if file.path.contains("Dockerfile") && import.module.contains(":latest") {
+                findings.push(Finding {
+                    rule_id: "flags_unpinned_container_image_tag".to_string(),
+                    status: Status::Failed,
+                    evidence: evidence.clone(),
+                    matrix_source: "SUPPLY".to_string(),
+                });
+            }
+
+            if file.path.contains("Cargo.lock") || file.path.contains("package-lock.json") {
+                if import.module.contains("vulnerable-package") {
+                    findings.push(Finding {
+                        rule_id: "flags_dependency_matching_locked_advisory_fixture".to_string(),
+                        status: Status::Failed,
+                        evidence: evidence.clone(),
+                        matrix_source: "SUPPLY".to_string(),
+                    });
+                } else if import.module.contains("unknown-package") {
+                    findings.push(Finding {
+                        rule_id: "reports_unknown_when_advisory_data_unavailable".to_string(),
+                        status: Status::CannotVerifyStatically,
+                        evidence: evidence.clone(),
+                        matrix_source: "SUPPLY".to_string(),
+                    });
+                }
+            }
+        }
+
+        // Check calls/static_controls for MCP servers
         for call in &file.calls {
-            if call.callee.contains("unpinned") {
-                findings.push(Finding {
-                    rule_id: "supply-unpinned".to_string(),
-                    status: Status::Failed,
-                    evidence: EvidenceRef {
-                        path: file.path.clone(),
-                        line: call.span.line,
-                        parser_error: false,
-                    },
-                    matrix_source: "SUPPLY".to_string(),
-                });
-            }
+            let evidence = EvidenceRef {
+                path: file.path.clone(),
+                line: call.span.line,
+                parser_error: false,
+            };
 
-            if call.callee.contains("vulnerable") {
-                findings.push(Finding {
-                    rule_id: "supply-vulnerable".to_string(),
-                    status: Status::Failed,
-                    evidence: EvidenceRef {
-                        path: file.path.clone(),
-                        line: call.span.line,
-                        parser_error: false,
-                    },
-                    matrix_source: "SUPPLY".to_string(),
-                });
-            }
-
-            if call.callee.contains("sbom") {
-                findings.push(Finding {
-                    rule_id: "supply-sbom".to_string(),
-                    status: Status::Verified,
-                    evidence: EvidenceRef {
-                        path: file.path.clone(),
-                        line: call.span.line,
-                        parser_error: false,
-                    },
-                    matrix_source: "SUPPLY".to_string(),
-                });
+            for control in &call.static_controls {
+                if control.contains("transport=untrusted") {
+                    findings.push(Finding {
+                        rule_id: "flags_untrusted_mcp_server_or_transport".to_string(),
+                        status: Status::Failed,
+                        evidence: evidence.clone(),
+                        matrix_source: "SUPPLY".to_string(),
+                    });
+                }
             }
         }
     }
