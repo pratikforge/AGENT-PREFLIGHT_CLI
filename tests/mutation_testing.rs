@@ -1,3 +1,44 @@
+use agent_preflight::adapters::mutation_testing;
+use agent_preflight::domain::status::Status;
+
+#[test]
+fn approval_claim_mutation_is_caught() {
+    let findings = mutation_testing::evaluate("approval_claim_mutation");
+    assert!(findings.iter().any(|f| f.rule_id == "approval_claim_mutation_is_caught" && f.status == Status::Failed));
+}
+
+#[test]
+fn audit_redaction_mutation_is_caught() {
+    let findings = mutation_testing::evaluate("audit_redaction_mutation");
+    assert!(
+        findings.iter().any(
+            |f| f.rule_id == "audit_redaction_mutation_is_caught" && f.status == Status::Failed
+        )
+    );
+}
+
+#[test]
+fn egress_private_range_mutation_is_caught() {
+    let findings = mutation_testing::evaluate("egress_private_range_mutation");
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "egress_private_range_mutation_is_caught"
+                && f.status == Status::Failed)
+    );
+}
+
+#[test]
+fn supply_chain_pin_mutation_is_caught() {
+    let findings = mutation_testing::evaluate("supply_chain_pin_mutation");
+    assert!(
+        findings
+            .iter()
+            .any(|f| f.rule_id == "supply_chain_pin_mutation_is_caught"
+                && f.status == Status::Failed)
+    );
+}
+
 use assert_cmd::Command;
 use std::fs;
 use tempfile::tempdir;
