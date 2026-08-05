@@ -81,7 +81,7 @@ fn print_banner() {
     println!("{}", style(&empty_line).white().bold());
 
     // Tagline, centered
-    let tagline = "Static verification for AI agent tool-use permissions";
+    let tagline = "Static verification & runtime protection for AI agents";
     let pad2 = (119 - tagline.len()) / 2;
     let pad2_r = 119 - pad2 - tagline.len();
     let tagline_line = format!("║{}{}{}║", " ".repeat(pad2), tagline, " ".repeat(pad2_r));
