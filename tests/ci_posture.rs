@@ -1,5 +1,6 @@
 use agent_preflight::adapters::ci;
 use agent_preflight::domain::status::Status;
+use std::fs;
 
 #[test]
 fn github_actions_write_all_permissions() {
@@ -47,4 +48,24 @@ jobs:
             .iter()
             .any(|f| f.rule_id == "ci-unpinned-action" && f.status == Status::Failed)
     );
+}
+
+#[test]
+fn ci_uses_pinned_cargo_commands() {
+    let content = fs::read_to_string(".github/workflows/agent-preflight-ci.yml").expect("missing ci yaml");
+    for line in content.lines() {
+        if line.contains("cargo ") && !line.contains("cargo +1.97.1") {
+            panic!("Found unpinned cargo command in CI config: {}", line);
+        }
+    }
+}
+
+#[test]
+fn pre_commit_uses_pinned_cargo_commands() {
+    let content = fs::read_to_string(".pre-commit-config.yaml").expect("missing pre-commit yaml");
+    for line in content.lines() {
+        if line.contains("cargo ") && !line.contains("cargo +1.97.1") {
+            panic!("Found unpinned cargo command in pre-commit config: {}", line);
+        }
+    }
 }

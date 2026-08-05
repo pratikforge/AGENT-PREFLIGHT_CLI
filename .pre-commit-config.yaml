@@ -33,12 +33,12 @@ repos:
       - id: agent-preflight-deny
         name: agent-preflight dependency policy
         language: system
-        entry: cargo deny --manifest-path agent-preflight/Cargo.toml check advisories bans licenses sources
+        entry: cargo +1.97.1 deny --manifest-path agent-preflight/Cargo.toml check advisories bans licenses sources
         pass_filenames: false
       - id: agent-preflight-audit
         name: agent-preflight vulnerability audit
         language: system
-        entry: cargo audit --file agent-preflight/Cargo.lock --deny warnings
+        entry: cargo +1.97.1 audit --file agent-preflight/Cargo.lock --deny warnings
         pass_filenames: false
       - id: agent-preflight-fixture-matrix
         name: agent-preflight fixture matrix
